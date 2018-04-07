@@ -57,8 +57,13 @@
     <Compile Include="Collectors\RegolithCollector.cs" />
     <Compile Include="Collectors\SolarWindCollector.cs" />
     <Compile Include="Collectors\UniversalCrustExtractor.cs" />
+    <Compile Include="ResourceManagement\ISyncResourceModule.cs" />
+    <Compile Include="ResourceManagement\ResourceSnapshot.cs" />
+    <Compile Include="ResourceManagement\ConversionProcess.cs" />
+    <Compile Include="ResourceManagement\SyncResourceOvermanager.cs" />
+    <Compile Include="ResourceManagement\SyncVesselResourceManager.cs" />
     <Compile Include="RDColoredUpgradeIcon.cs" />
-    <Compile Include="Extensions\ResourceBuffers.cs" />
+    <Compile Include="ResourceManagement\ResourceBuffers.cs" />
     <Compile Include="Resources\AtmosphericFloatCurves.cs" />
     <Compile Include="Resources\CrustalResource.cs" />
     <Compile Include="Resources\CrustalResourceHandler.cs" />

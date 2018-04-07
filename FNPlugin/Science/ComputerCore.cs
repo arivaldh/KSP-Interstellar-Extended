@@ -86,7 +86,7 @@ namespace FNPlugin
         // Public Overrides
         public override void OnStart(PartModule.StartState state)
         {
-            String[] resources_to_supply = { ResourceManager.FNRESOURCE_THERMALPOWER, ResourceManager.FNRESOURCE_CHARGED_PARTICLES, ResourceManager.FNRESOURCE_MEGAJOULES, ResourceManager.FNRESOURCE_WASTEHEAT, };
+            String[] resources_to_supply = { ResourceManager.FNRESOURCE_MEGAJOULES };
             this.resources_to_supply = resources_to_supply;
 
             _isEnabledField = Fields["IsEnabled"];

@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace FNPlugin
 {
-    abstract class ResourceSuppliableModule : PartModule, IResourceSuppliable, IResourceSupplier
+    abstract class ResourceSuppliableModule : PartModule, IResourceSuppliable, IResourceSupplier, ISyncResourceModule
     {
         [KSPField(isPersistant = false, guiActive = false, guiName = "Update Counter")]
         public long updateCounter = 0;
@@ -600,6 +600,21 @@ namespace FNPlugin
                 displayName += " " + partNrInList;
 
             return displayName;
+        }
+
+        public virtual string GetResourceManagerDisplayName()
+        {
+            return getResourceManagerDisplayName();
+        }
+
+        public virtual void Notify(List<ConversionProcess> processes)
+        {
+            foreach (ConversionProcess process in processes)
+            {
+                //Debug.Log("process + " + process + " finished with fractionToProcess = " + process.FractionToProcess);
+                //Debug.Log(process.toStringInputs());
+                //Debug.Log(process.toStringOutputs());
+            }
         }
 
         public virtual int getPowerPriority()

@@ -354,7 +354,7 @@ namespace FNPlugin
 
         public override void OnStart(PartModule.StartState state)
         {
-            String[] resources_to_supply = { ResourceManager.FNRESOURCE_MEGAJOULES, ResourceManager.FNRESOURCE_WASTEHEAT, ResourceManager.FNRESOURCE_THERMALPOWER, ResourceManager.FNRESOURCE_CHARGED_PARTICLES };
+            String[] resources_to_supply = { ResourceManager.FNRESOURCE_MEGAJOULES, ResourceManager.FNRESOURCE_THERMALPOWER, ResourceManager.FNRESOURCE_CHARGED_PARTICLES };
             this.resources_to_supply = resources_to_supply;
 
             //if (state == PartModule.StartState.Docked)
@@ -364,11 +364,10 @@ namespace FNPlugin
             //}
 
             resourceBuffers = new ResourceBuffers();
-            resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, 2.0e+5, true));
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_MEGAJOULES));
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, 50 / powerOutputMultiplier));
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.Init(this.part);
+            resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0 + 5, true);
 
             base.OnStart(state);
             //generatorType = originalName;
@@ -917,7 +916,12 @@ namespace FNPlugin
                         received_power_per_second = effectiveInputPowerPerSecond;
 
                         if (!CheatOptions.IgnoreMaxTemperature)
-                            consumeFNResourcePerSecond(effectiveInputPowerPerSecond, ResourceManager.FNRESOURCE_WASTEHEAT);
+                        {
+                            SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(this.vessel);
+                            ConversionProcess process = new ConversionProcess(this);
+                            process.AddInput(new ConversionProcess.Entry(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond * TimeWarp.fixedDeltaTime));
+                            manager.InsertConversionProcess(this, process);
+                        }
 
                         electricdtps = Math.Max(effectiveInputPowerPerSecond * powerOutputMultiplier, 0);
 
@@ -944,7 +948,12 @@ namespace FNPlugin
                         var effectiveInputPowerPerSecond = received_power_per_second * _totalEff;
 
                         if (!CheatOptions.IgnoreMaxTemperature)
-                            consumeFNResourcePerSecond(effectiveInputPowerPerSecond, ResourceManager.FNRESOURCE_WASTEHEAT);
+                        {
+                            SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(this.vessel);
+                            ConversionProcess process = new ConversionProcess(this);
+                            process.AddInput(new ConversionProcess.Entry(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond * TimeWarp.fixedDeltaTime));
+                            manager.InsertConversionProcess(this, process);
+                        }
 
                         electricdtps = Math.Max(effectiveInputPowerPerSecond * powerOutputMultiplier, 0);
                         maxElectricdtps = maxChargedPower * _totalEff;
