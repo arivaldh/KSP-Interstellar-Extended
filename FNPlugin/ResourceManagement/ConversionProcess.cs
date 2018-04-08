@@ -129,7 +129,7 @@ namespace FNPlugin
             ratio = Math.Min(FractionToProcess, ratio);
 
             inputs.ForEach(entry => manager.GetResourceSnapshot(entry.ResourceId).Consume(entry.Amount * ratio));
-            outputs.ForEach(entry => manager.GetResourceSnapshot(entry.ResourceId).Consume(entry.Amount * ratio));
+            outputs.ForEach(entry => manager.GetResourceSnapshot(entry.ResourceId).Produce(entry.Amount * ratio));
 
             FractionToProcess -= ratio;
 

@@ -919,7 +919,7 @@ namespace FNPlugin
                         {
                             SyncVesselResourceManager.AddProcess(this, this,
                                 ConversionProcess.Builder()
-                                    .AddInput(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond * TimeWarp.fixedDeltaTime)
+                                    .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond * TimeWarp.fixedDeltaTime)
                                     .Build());
                         }
 
@@ -951,7 +951,7 @@ namespace FNPlugin
                         {
                             SyncVesselResourceManager.AddProcess(this, this,
                                 ConversionProcess.Builder()
-                                    .AddInput(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond * TimeWarp.fixedDeltaTime)
+                                    .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond * TimeWarp.fixedDeltaTime)
                                     .Build());
                         }
 
