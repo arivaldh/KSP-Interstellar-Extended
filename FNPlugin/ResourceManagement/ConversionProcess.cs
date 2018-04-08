@@ -7,7 +7,7 @@ namespace FNPlugin
 {
     public class ConversionProcess
     {
-        public class Entry : Object
+        public class Entry
         {
             public int ResourceId { get; private set; }
             public double Amount { get; private set; }
@@ -29,27 +29,78 @@ namespace FNPlugin
             }
         }
 
-        public double FractionToProcess { get; private set;  }
-        private List<Entry> inputs;
-        private List<Entry> outputs;
-        private ISyncResourceModule module;
+        public class ProcessBuilder
+        {
+            private List<Entry> inputs;
+            private List<Entry> outputs;
+            private ISyncResourceModule module;
 
-        public ConversionProcess(ISyncResourceModule module)
+            public ProcessBuilder()
+            {
+                inputs = new List<Entry>();
+                outputs = new List<Entry>();
+            }
+
+            public ConversionProcess Build()
+            {
+                return new ConversionProcess(module, inputs, outputs);
+            }
+
+            public ProcessBuilder Module(ISyncResourceModule module)
+            {
+                this.module = module;
+                return this;
+            }
+
+            public ProcessBuilder AddInput(string resourceName, double amount, bool dumpExcess = false)
+            {
+                return AddInput(new Entry(resourceName, amount, dumpExcess));
+            }
+
+            public ProcessBuilder AddInput(int resourceId, double amount, bool dumpExcess = false)
+            {
+                return AddInput(new Entry(resourceId, amount, dumpExcess));
+            }
+
+            public ProcessBuilder AddInput(Entry entry)
+            {
+                inputs.Add(entry);
+                return this;
+            }
+
+            public ProcessBuilder AddOutput(string resourceName, double amount, bool dumpExcess = false)
+            {
+                return AddOutput(new Entry(resourceName, amount, dumpExcess));
+            }
+
+            public ProcessBuilder AddOutput(int resourceId, double amount, bool dumpExcess = false)
+            {
+                return AddOutput(new Entry(resourceId, amount, dumpExcess));
+            }
+
+            public ProcessBuilder AddOutput(Entry entry)
+            {
+                outputs.Add(entry);
+                return this;
+            }
+        }
+
+        public static ProcessBuilder Builder()
+        {
+            return new ProcessBuilder();
+        }
+
+        public double FractionToProcess { get; private set;  }
+        private readonly List<Entry> inputs;
+        private readonly List<Entry> outputs;
+        private readonly ISyncResourceModule module;
+
+        protected ConversionProcess(ISyncResourceModule module, List<Entry> inputs, List<Entry> outputs)
         {
             this.FractionToProcess = 1.0d;
             this.module = module;
-            this.inputs = new List<Entry>();
-            this.outputs = new List<Entry>();
-        }
-
-        public void AddInput(Entry entry)
-        {
-            inputs.Add(entry);
-        }
-
-        public void AddOutput(Entry entry)
-        {
-            outputs.Add(entry);
+            this.inputs = inputs;
+            this.outputs = outputs;
         }
 
         public bool Run(SyncVesselResourceManager manager)

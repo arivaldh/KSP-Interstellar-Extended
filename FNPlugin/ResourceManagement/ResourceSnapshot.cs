@@ -34,25 +34,9 @@ namespace FNPlugin
         {
             this.vessel = vessel;
             this.resourceId = resourceId;
-            RecalculateResourceStorage(vessel, resourceId, out this.storedAmount, out this.maxAmount);
+            vessel.GetConnectedResourceTotals(resourceId, out this.storedAmount, out this.maxAmount);
         }
 
-        private static void RecalculateResourceStorage(Vessel vessel, int resourceId, out double amount, out double maxAmount)
-        {
-            amount = 0.0d;
-            maxAmount = 0.0d;
-            foreach (Part part in vessel.Parts)
-            {
-                foreach (PartResource resource in part.Resources)
-                {
-                    if (resource.flowState && resource.info.id == resourceId)
-                    {
-                        amount += resource.amount;
-                        maxAmount += resource.maxAmount;
-                    }
-                }
-            }
-        }
 
         public void Produce(double amount)
         {
@@ -66,7 +50,7 @@ namespace FNPlugin
 
         public void Commit()
         {
-            RecalculateResourceStorage(vessel, resourceId, out this.storedAmount, out this.maxAmount);
+            vessel.GetConnectedResourceTotals(resourceId, out this.storedAmount, out this.maxAmount);
 
             if (changedAmount < 0 && Math.Abs(changedAmount) - storedAmount > Double.Epsilon)
             {
@@ -80,8 +64,7 @@ namespace FNPlugin
 
         private void RequestResource()
         {
-            // no idea if it will work ok
-            double provided = vessel.RequestResource(vessel.Parts.FirstOrDefault(), resourceId, changedAmount, true);
+            double provided = vessel.Parts.FirstOrDefault().RequestResource(resourceId, changedAmount, ResourceFlowMode.ALL_VESSEL_BALANCE);
 
             if (changedAmount < 0 && Math.Abs(provided - changedAmount) > Double.Epsilon)
             {

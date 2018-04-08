@@ -55,13 +55,20 @@ namespace FNPlugin
             return snapshot;
         }
 
-        public void InsertConversionProcess(ISyncResourceModule module, ConversionProcess process)
+        public static void AddProcess(PartModule module, ISyncResourceModule callback, ConversionProcess process)
+        {
+            SyncVesselResourceManager manager = GetSyncVesselResourceManager(module.vessel);
+            manager.InsertConversionProcess(callback, process);
+
+        }
+
+        protected void InsertConversionProcess(ISyncResourceModule callback, ConversionProcess process)
         {
             List<ConversionProcess> list = null;
-            if (!processes.TryGetValue(module, out list))
+            if (!processes.TryGetValue(callback, out list))
             {
                 list = new List<ConversionProcess>();
-                processes.Add(module, list);
+                processes.Add(callback, list);
             }
 
             list.Add(process);

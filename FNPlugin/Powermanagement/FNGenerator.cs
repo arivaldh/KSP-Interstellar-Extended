@@ -917,10 +917,10 @@ namespace FNPlugin
 
                         if (!CheatOptions.IgnoreMaxTemperature)
                         {
-                            SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(this.vessel);
-                            ConversionProcess process = new ConversionProcess(this);
-                            process.AddInput(new ConversionProcess.Entry(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond * TimeWarp.fixedDeltaTime));
-                            manager.InsertConversionProcess(this, process);
+                            SyncVesselResourceManager.AddProcess(this, this,
+                                ConversionProcess.Builder()
+                                    .AddInput(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond * TimeWarp.fixedDeltaTime)
+                                    .Build());
                         }
 
                         electricdtps = Math.Max(effectiveInputPowerPerSecond * powerOutputMultiplier, 0);
@@ -949,10 +949,10 @@ namespace FNPlugin
 
                         if (!CheatOptions.IgnoreMaxTemperature)
                         {
-                            SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(this.vessel);
-                            ConversionProcess process = new ConversionProcess(this);
-                            process.AddInput(new ConversionProcess.Entry(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond * TimeWarp.fixedDeltaTime));
-                            manager.InsertConversionProcess(this, process);
+                            SyncVesselResourceManager.AddProcess(this, this,
+                                ConversionProcess.Builder()
+                                    .AddInput(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond * TimeWarp.fixedDeltaTime)
+                                    .Build());
                         }
 
                         electricdtps = Math.Max(effectiveInputPowerPerSecond * powerOutputMultiplier, 0);
