@@ -72,7 +72,7 @@ namespace FNPlugin
         {
             double provided = -vessel.Parts.FirstOrDefault().RequestResource(resourceId, -changedAmount, ResourceFlowMode.ALL_VESSEL_BALANCE);
 
-            if (changedAmount < 0 && Math.Abs(provided - changedAmount) > Double.Epsilon)
+            if (changedAmount < 0 && Math.Abs(provided - changedAmount) > 0.0001)
             {
                 Debug.LogError("Requested more resource than the vessel was able to provide!");
                 Debug.LogError(String.Format("provided = {0}, changedAmount = {1}", provided, changedAmount));
