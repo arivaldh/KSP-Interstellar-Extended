@@ -58,13 +58,13 @@ namespace FNPlugin
                 Debug.LogError("changedAmount = " + changedAmount + ", storedAmount = " + storedAmount);
             }
 
-            if (changedAmount > Double.Epsilon)
+            if (Math.Abs(changedAmount) > Double.Epsilon)
                 RequestResource();
         }
 
         private void RequestResource()
         {
-            double provided = vessel.Parts.FirstOrDefault().RequestResource(resourceId, changedAmount, ResourceFlowMode.ALL_VESSEL_BALANCE);
+            double provided = -vessel.Parts.FirstOrDefault().RequestResource(resourceId, -changedAmount, ResourceFlowMode.ALL_VESSEL_BALANCE);
 
             if (changedAmount < 0 && Math.Abs(provided - changedAmount) > Double.Epsilon)
             {

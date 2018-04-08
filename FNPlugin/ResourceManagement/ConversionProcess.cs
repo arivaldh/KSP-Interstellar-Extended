@@ -9,15 +9,17 @@ namespace FNPlugin
     {
         public class Entry
         {
+            public string ResourceName { get; private set; }
             public int ResourceId { get; private set; }
             public double Amount { get; private set; }
             public bool DumpExcess { get; private set; }
 
             public Entry(string resourceName, double amount, bool dumpExcess = false)
-                : this(PartResourceLibrary.Instance.GetDefinition(resourceName).id, amount, dumpExcess) { }
+                : this(resourceName, PartResourceLibrary.Instance.GetDefinition(resourceName).id, amount, dumpExcess) { }
 
-            public Entry(int resourceId, double amount, bool dumpExcess = false)
+            public Entry(string resourceName, int resourceId, double amount, bool dumpExcess = false)
             {
+                this.ResourceName = resourceName;
                 this.ResourceId = resourceId;
                 this.Amount = amount;
                 this.DumpExcess = dumpExcess;
@@ -25,7 +27,7 @@ namespace FNPlugin
 
             public override string ToString()
             {
-                return String.Format("Entry[{0}, {1}, {2}]", ResourceId, Amount, DumpExcess);
+                return String.Format("Entry[{0}, {1}, {2}, {3}]", ResourceName, ResourceId, Amount, DumpExcess);
             }
         }
 
@@ -57,9 +59,9 @@ namespace FNPlugin
                 return AddInput(new Entry(resourceName, amount, dumpExcess));
             }
 
-            public ProcessBuilder AddInput(int resourceId, double amount, bool dumpExcess = false)
+            public ProcessBuilder AddInput(string resourceName, int resourceId, double amount, bool dumpExcess = false)
             {
-                return AddInput(new Entry(resourceId, amount, dumpExcess));
+                return AddInput(new Entry(resourceName, resourceId, amount, dumpExcess));
             }
 
             public ProcessBuilder AddInput(Entry entry)
@@ -73,9 +75,9 @@ namespace FNPlugin
                 return AddOutput(new Entry(resourceName, amount, dumpExcess));
             }
 
-            public ProcessBuilder AddOutput(int resourceId, double amount, bool dumpExcess = false)
+            public ProcessBuilder AddOutput(string resourceName, int resourceId, double amount, bool dumpExcess = false)
             {
-                return AddOutput(new Entry(resourceId, amount, dumpExcess));
+                return AddOutput(new Entry(resourceName, resourceId, amount, dumpExcess));
             }
 
             public ProcessBuilder AddOutput(Entry entry)
@@ -125,8 +127,7 @@ namespace FNPlugin
             }
 
             // how much can we proceed with the convertion
-            double ratio = Math.Min(minOutputRatio, minInputRatio);
-            ratio = Math.Min(FractionToProcess, ratio);
+            double ratio = Math.Min(FractionToProcess, Math.Min(minOutputRatio, minInputRatio));
 
             inputs.ForEach(entry => manager.GetResourceSnapshot(entry.ResourceId).Consume(entry.Amount * ratio));
             outputs.ForEach(entry => manager.GetResourceSnapshot(entry.ResourceId).Produce(entry.Amount * ratio));

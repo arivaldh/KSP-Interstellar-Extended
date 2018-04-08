@@ -434,6 +434,19 @@ namespace FNPlugin
             return manager.ResourceBarRatioBegin;
         }
 
+        public double getSyncResourceBarRatio(String resourceName)
+        {
+            if (String.IsNullOrEmpty(resourceName))
+            {
+                Debug.Log("[KSPI] - getResourceBarRatio illegal values.");
+                return 0;
+            }
+            double amount;
+            double maxAmount;
+            this.vessel.GetConnectedResourceTotals(PartResourceLibrary.Instance.GetDefinition(resourceName).id, out amount, out maxAmount);
+            return maxAmount > Double.Epsilon ? (amount / maxAmount) : 0;
+        }
+
         public double getResourceBarRatioEnd(String resourcename)
         {
             if (String.IsNullOrEmpty(resourcename)) {
@@ -609,12 +622,13 @@ namespace FNPlugin
 
         public virtual void Notify(List<ConversionProcess> processes)
         {
-            foreach (ConversionProcess process in processes)
-            {
-                //Debug.Log("process + " + process + " finished with fractionToProcess = " + process.FractionToProcess);
-                //Debug.Log(process.toStringInputs());
-                //Debug.Log(process.toStringOutputs());
-            }
+            //Debug.Log("processes in " + this.part.name);
+            //foreach (ConversionProcess process in processes)
+            //{
+            //    Debug.Log("process " + process + " finished with fractionToProcess = " + process.FractionToProcess);
+            //    Debug.Log(process.toStringInputs());
+            //    Debug.Log(process.toStringOutputs());
+            //}
         }
 
         public virtual int getPowerPriority()

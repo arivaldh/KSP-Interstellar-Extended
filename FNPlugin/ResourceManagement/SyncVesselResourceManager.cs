@@ -84,7 +84,7 @@ namespace FNPlugin
                 {
                     foreach (ConversionProcess process in processes)
                     {
-                        ranOK = process.Run(this);
+                        ranOK |= process.Run(this);
                     }
                 }
             } while (ranOK);
