@@ -146,7 +146,7 @@ namespace FNPlugin
                 return HighLogic.LoadedSceneIsFlight 
                 ? CheatOptions.IgnoreMaxTemperature 
                     ? 1 
-                    : (1 - getResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT)) 
+                    : (1 - getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT)) 
                 : 1; 
             }
         }

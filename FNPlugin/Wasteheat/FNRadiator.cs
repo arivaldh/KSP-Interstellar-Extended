@@ -86,7 +86,7 @@ namespace FNPlugin
         public void Update()
         {
             Counter = UpdatingRadiator.updateCounter;
-            WasteHeatRatio = UpdatingRadiator.getResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
+            WasteHeatRatio = UpdatingRadiator.getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
             var efficiency = 1 - Math.Pow(1 - WasteHeatRatio, 400);
 
             if (Double.IsNaN(WasteHeatRatio))

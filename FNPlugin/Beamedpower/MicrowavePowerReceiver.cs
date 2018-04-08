@@ -361,7 +361,7 @@ namespace FNPlugin
                         ? 1 
                         : CheatOptions.IgnoreMaxTemperature 
                             ? 1 
-                            : (1 - getResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT)) 
+                            : (1 - getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT)) 
                     : 1; 
             }
         }
@@ -1531,7 +1531,7 @@ namespace FNPlugin
 
             StoreGeneratorRequests();
 
-            wasteheatRatio = CheatOptions.IgnoreMaxTemperature ? 0 : Math.Min(1, getResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT));
+            wasteheatRatio = CheatOptions.IgnoreMaxTemperature ? 0 : Math.Min(1, getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT));
 
             CalculateThermalSolarPower();
 

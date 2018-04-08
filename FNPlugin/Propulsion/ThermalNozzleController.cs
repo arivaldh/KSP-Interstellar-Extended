@@ -1294,7 +1294,7 @@ namespace FNPlugin
 
                 if (!CheatOptions.IgnoreMaxTemperature)
                 {
-                    var resourceRatio = getResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
+                    var resourceRatio = getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
                             .AddInput(ResourceManager.FNRESOURCE_WASTEHEAT, 20 * resourceRatio * max_fuel_flow_rate * TimeWarp.fixedDeltaTime)

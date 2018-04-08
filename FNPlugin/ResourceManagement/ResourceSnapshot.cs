@@ -27,16 +27,22 @@ namespace FNPlugin
         private double maxAmount;
         private double changedAmount;
 
+        private readonly string resourceName;
         private readonly int resourceId;
         private readonly Vessel vessel;
 
         public ResourceSnapshot(Vessel vessel, int resourceId)
+            : this(vessel, resourceId, PartResourceLibrary.Instance.GetDefinition(resourceId).name) { }
+
+        public ResourceSnapshot(Vessel vessel, string resourceName)
+            : this(vessel, PartResourceLibrary.Instance.GetDefinition(resourceName).id, resourceName) { }
+
+        public ResourceSnapshot(Vessel vessel, int resourceId, string resourceName)
         {
             this.vessel = vessel;
             this.resourceId = resourceId;
             vessel.GetConnectedResourceTotals(resourceId, out this.storedAmount, out this.maxAmount);
         }
-
 
         public void Produce(double amount)
         {
@@ -55,7 +61,7 @@ namespace FNPlugin
             if (changedAmount < 0 && Math.Abs(changedAmount) - storedAmount > Double.Epsilon)
             {
                 Debug.LogError("Used more resource than there is in the tanks. No idea why!");
-                Debug.LogError("changedAmount = " + changedAmount + ", storedAmount = " + storedAmount);
+                Debug.LogError(String.Format("Part = {0} changedAmount = {1}, storedAmount = {2}", vessel.name, changedAmount, storedAmount));
             }
 
             if (Math.Abs(changedAmount) > Double.Epsilon)
@@ -69,7 +75,7 @@ namespace FNPlugin
             if (changedAmount < 0 && Math.Abs(provided - changedAmount) > Double.Epsilon)
             {
                 Debug.LogError("Requested more resource than the vessel was able to provide!");
-                Debug.LogError("provided = " + provided + ", changedAmount = " + changedAmount);
+                Debug.LogError(String.Format("provided = {0}, changedAmount = {1}", provided, changedAmount));
             }
         }
     }

@@ -777,7 +777,7 @@ namespace FNPlugin
             {
                 var chargedPowerModifier = Math.Pow(attachedPowerSource.ChargedPowerRatio, 2);
 
-                var plasmaTemperature = Math.Pow(1 - getResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT), 2) * attachedPowerSource.CoreTemperature;
+                var plasmaTemperature = Math.Pow(1 - getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT), 2) * attachedPowerSource.CoreTemperature;
 
                 hotBathTemp = applies_balance || !isMHD
                     ? attachedPowerSource.HotBathTemperature 

@@ -1924,7 +1924,7 @@ namespace FNPlugin.Reactors
 
         protected bool ReactorIsOverheating()
         {
-            if (!CheatOptions.IgnoreMaxTemperature && getResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT) >= emergencyPowerShutdownFraction && canShutdown)
+            if (!CheatOptions.IgnoreMaxTemperature && getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT) >= emergencyPowerShutdownFraction && canShutdown)
             {
                 deactivate_timer++;
                 if (deactivate_timer > 3)
@@ -1941,7 +1941,7 @@ namespace FNPlugin.Reactors
             if (CheatOptions.IgnoreMaxTemperature)
                 return 1;
 
-            var wasteheatRatio = getResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
+            var wasteheatRatio = getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
             if (wasteheatRatio < safetyPowerReductionFraction)
                 return 1;
 

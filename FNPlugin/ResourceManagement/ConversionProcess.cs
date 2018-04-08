@@ -17,6 +17,9 @@ namespace FNPlugin
             public Entry(string resourceName, double amount, bool dumpExcess = false)
                 : this(resourceName, PartResourceLibrary.Instance.GetDefinition(resourceName).id, amount, dumpExcess) { }
 
+            public Entry(int resourceId, double amount, bool dumpExcess = false)
+                : this(PartResourceLibrary.Instance.GetDefinition(resourceId).name, resourceId, amount, dumpExcess) { }
+
             public Entry(string resourceName, int resourceId, double amount, bool dumpExcess = false)
             {
                 this.ResourceName = resourceName;
@@ -59,6 +62,11 @@ namespace FNPlugin
                 return AddInput(new Entry(resourceName, amount, dumpExcess));
             }
 
+            public ProcessBuilder AddInput(int resourceId, double amount, bool dumpExcess = false)
+            {
+                return AddInput(new Entry(resourceId, amount, dumpExcess));
+            }
+
             public ProcessBuilder AddInput(string resourceName, int resourceId, double amount, bool dumpExcess = false)
             {
                 return AddInput(new Entry(resourceName, resourceId, amount, dumpExcess));
@@ -73,6 +81,11 @@ namespace FNPlugin
             public ProcessBuilder AddOutput(string resourceName, double amount, bool dumpExcess = false)
             {
                 return AddOutput(new Entry(resourceName, amount, dumpExcess));
+            }
+
+            public ProcessBuilder AddOutput(int resourceId, double amount, bool dumpExcess = false)
+            {
+                return AddOutput(new Entry(resourceId, amount, dumpExcess));
             }
 
             public ProcessBuilder AddOutput(string resourceName, int resourceId, double amount, bool dumpExcess = false)

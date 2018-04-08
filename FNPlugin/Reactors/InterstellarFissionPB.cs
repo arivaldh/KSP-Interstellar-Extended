@@ -73,7 +73,7 @@ namespace FNPlugin.Reactors
             {
                 if (HighLogic.LoadedSceneIsFlight && heatThrottling)
                 {
-                    resourceBarRatio = CheatOptions.IgnoreMaxTemperature ? 0 : getResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
+                    resourceBarRatio = CheatOptions.IgnoreMaxTemperature ? 0 : getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
 
                     var temperatureIncrease = Math.Max(Math.Pow(resourceBarRatio, coreTemperatureWasteheatPower) + coreTemperatureWasteheatModifier, 0) * coreTemperatureWasteheatMultiplier * optimalTempDifference;
 
