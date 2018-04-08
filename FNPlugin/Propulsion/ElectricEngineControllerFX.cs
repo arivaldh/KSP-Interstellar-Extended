@@ -227,7 +227,6 @@ namespace FNPlugin
             try
             {
                 // initialise resources
-                this.resources_to_supply = new [] { ResourceManager.FNRESOURCE_WASTEHEAT };
                 base.OnStart(state);
                 AttachToEngine();
 
@@ -242,9 +241,8 @@ namespace FNPlugin
                 UpdateEngineTypeString();
 
                 resourceBuffers = new ResourceBuffers();
-                resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, 2.0e+4, true));
-                resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
                 resourceBuffers.Init(this.part);
+                resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
 
                 // initialize propellant
                 _propellants = ElectricEnginePropellant.GetPropellantsEngineForType(type);
@@ -462,9 +460,11 @@ namespace FNPlugin
             // produce waste heat
             var heatToProduce = powerReceived * (1 - currentPropellantEfficiency) * Current_propellant.WasteHeatMultiplier;
 
-            var heatProduction = CheatOptions.IgnoreMaxTemperature 
-                ? heatToProduce
-                : supplyFNResourcePerSecond(heatToProduce, ResourceManager.FNRESOURCE_WASTEHEAT);
+            var heatProduction = heatToProduce;
+            SyncVesselResourceManager.AddProcess(this, this,
+                ConversionProcess.Builder()
+                    .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, heatToProduce * TimeWarp.fixedDeltaTime)
+                    .Build());
 
             // update GUI Values
             _electrical_consumption_f = powerReceived;

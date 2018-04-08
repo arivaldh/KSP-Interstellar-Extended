@@ -497,9 +497,6 @@ namespace FNPlugin
 
         public override void OnStart(StartState state)
         {
-            String[] resources_to_supply = { ResourceManager.FNRESOURCE_WASTEHEAT };
-            this.resources_to_supply = resources_to_supply;
-
             base.OnStart(state);
 
             radiatedThermalPower = 0;
@@ -621,12 +618,8 @@ namespace FNPlugin
             maxAtmosphereTemperature = String.IsNullOrEmpty(surfaceAreaUpgradeTechReq) ? Math.Min((float)PluginHelper.RadiatorTemperatureMk3, maxRadiatorTemperature) : Math.Min(maxAtmosphereTemperature, maxRadiatorTemperature);
 
             resourceBuffers = new ResourceBuffers();
-
-            resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, 1.0e+6));
-
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
-
             resourceBuffers.Init(this.part);
+            resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 1.0e+6);
         }
 
         void radiatorIsEnabled_OnValueModified(object arg1)
@@ -733,10 +726,7 @@ namespace FNPlugin
 
                 var external_temperature = FlightGlobals.getExternalTemperature(part.transform.position);
 
-                wasteheatManager = getManagerForVessel(ResourceManager.FNRESOURCE_WASTEHEAT);
-
-                // get resource bar ratio at start of frame
-                wasteheatRatio = wasteheatManager.ResourceBarRatioBegin;
+                wasteheatRatio = getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
 
                 if (Double.IsNaN(wasteheatRatio))
                 {
@@ -864,9 +854,11 @@ namespace FNPlugin
         {
             if (radiatorIsEnabled)
             {
-                var consumedWasteheat = CheatOptions.IgnoreMaxTemperature || wasteheatToConsume == 0
-                    ? wasteheatToConsume 
-                    : consumeFNResourcePerSecond(wasteheatToConsume, ResourceManager.FNRESOURCE_WASTEHEAT, wasteheatManager);
+                var consumedWasteheat = wasteheatToConsume;
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                        .AddInput(ResourceManager.FNRESOURCE_WASTEHEAT, wasteheatToConsume * TimeWarp.fixedDeltaTime)
+                        .Build());
 
                 if (Double.IsNaN(consumedWasteheat))
                     return 0;

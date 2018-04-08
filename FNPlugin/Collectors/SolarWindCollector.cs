@@ -775,7 +775,10 @@ namespace FNPlugin
 
                 dLastPowerRatio = offlineCollecting ? dLastPowerRatio : (dPowerRequirementsMw > 0 ? revievedPowerMw / dPowerRequirementsMw : 0);
 
-                supplyManagedFNResourcePerSecond(dWasteheatProductionMw * dLastPowerRatio, ResourceManager.FNRESOURCE_WASTEHEAT);
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                        .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, dWasteheatProductionMw * dLastPowerRatio * TimeWarp.fixedDeltaTime)
+                        .Build());
 
                 // show in GUI
                 strCollectingStatus = "Collecting solar wind";

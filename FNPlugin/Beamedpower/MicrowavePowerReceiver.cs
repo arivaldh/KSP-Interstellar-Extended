@@ -764,7 +764,7 @@ namespace FNPlugin
 
         public override void OnStart(PartModule.StartState state)
         {
-            String[] resources_to_supply = { ResourceManager.FNRESOURCE_MEGAJOULES, ResourceManager.FNRESOURCE_WASTEHEAT, ResourceManager.FNRESOURCE_THERMALPOWER };
+            String[] resources_to_supply = { ResourceManager.FNRESOURCE_MEGAJOULES, ResourceManager.FNRESOURCE_THERMALPOWER };
 
             this.resources_to_supply = resources_to_supply;
             base.OnStart(state);
@@ -913,15 +913,14 @@ namespace FNPlugin
             }
 
             resourceBuffers = new ResourceBuffers();
-            resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, 2.0e+5));
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_THERMALPOWER));
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_MEGAJOULES));
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE));
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_THERMALPOWER, StableMaximumReactorPower);
             resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_MEGAJOULES, StableMaximumReactorPower);
             resourceBuffers.UpdateVariable(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, StableMaximumReactorPower);
             resourceBuffers.Init(this.part);
+            resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5);
 
             // look for any transmitter partmodule
             part_transmitter = part.FindModuleImplementing<MicrowavePowerTransmitter>();
@@ -1605,7 +1604,10 @@ namespace FNPlugin
                             {
                                 var supply_ratio = powerGeneratedResult.currentSupply / total_thermal_power_provided;
                                 var final_thermal_wasteheat = powerGeneratedResult.currentSupply + supply_ratio * total_conversion_waste_heat_production;
-                                supplyFNResourcePerSecondWithMax(final_thermal_wasteheat, total_beamed_power_max, ResourceManager.FNRESOURCE_WASTEHEAT);
+                                SyncVesselResourceManager.AddProcess(this, this,
+                                    ConversionProcess.Builder()
+                                    .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, final_thermal_wasteheat * TimeWarp.fixedDeltaTime)
+                                    .Build());
                             }
 
                             thermal_power_ratio = total_thermal_power_available > 0 ? powerGeneratedResult.currentSupply / total_thermal_power_available : 0;
@@ -1653,7 +1655,10 @@ namespace FNPlugin
                         if (!CheatOptions.IgnoreMaxTemperature)
                         {
                             var solarWasteheat = solarInputMegajoules * (1 - effectiveSolarThermalElectricEfficiency);
-                            supplyFNResourcePerSecond(supply_ratio * total_conversion_waste_heat_production + supply_ratio * solarWasteheat, ResourceManager.FNRESOURCE_WASTEHEAT);
+                            SyncVesselResourceManager.AddProcess(this, this,
+                                ConversionProcess.Builder()
+                                    .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, supply_ratio * (total_conversion_waste_heat_production + solarWasteheat) * TimeWarp.fixedDeltaTime)
+                                    .Build());
                         }
 
                         foreach (var item in received_power)

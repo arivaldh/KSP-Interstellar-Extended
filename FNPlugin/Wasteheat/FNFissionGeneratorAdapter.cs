@@ -43,14 +43,14 @@ namespace FNPlugin
 
                 OverallEfficiency = "10%";
 
-                String[] resources_to_supply = { ResourceManager.FNRESOURCE_MEGAJOULES, ResourceManager.FNRESOURCE_WASTEHEAT };
+                String[] resources_to_supply = { ResourceManager.FNRESOURCE_MEGAJOULES };
                 this.resources_to_supply = resources_to_supply;
                 base.OnStart(state);
 
                 resourceBuffers = new ResourceBuffers();
                 resourceBuffers.AddConfiguration(new ResourceBuffers.MaxAmountConfig(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, 50));
-                resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_WASTEHEAT, 1, 2.0e+5, true));
                 resourceBuffers.Init(this.part);
+                resourceBuffers.AddFixedWasteHeatBuffer(1, 2.0e+5, true);
             }
             catch (Exception e)
             {
@@ -131,7 +131,12 @@ namespace FNPlugin
                 megaJouleGeneratorPowerSupply = supplyFNResourcePerSecondWithMax(generatorRate / 1000, generatorMax / 1000, ResourceManager.FNRESOURCE_MEGAJOULES);
 
                 if (!CheatOptions.IgnoreMaxTemperature)
-                    supplyFNResourcePerSecond(generatorRate / 10000.0d, ResourceManager.FNRESOURCE_WASTEHEAT);
+                {
+                    SyncVesselResourceManager.AddProcess(this, this,
+                        ConversionProcess.Builder()
+                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, (generatorRate / 10000.0d) * TimeWarp.fixedDeltaTime)
+                            .Build());
+                }
             }
             catch (Exception e)
             {

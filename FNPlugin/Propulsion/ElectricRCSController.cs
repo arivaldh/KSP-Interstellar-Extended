@@ -331,9 +331,6 @@ namespace FNPlugin
                 if (String.IsNullOrEmpty(displayName))
                     displayName = part.partInfo.title;
 
-                String[] resources_to_supply = { ResourceManager.FNRESOURCE_WASTEHEAT };
-                this.resources_to_supply = resources_to_supply;
-
                 oldThrustLimiter = thrustLimiter;
                 oldPowerEnabled = powerEnabled;
                 //efficiencyModifier = g0 * 0.5 / 1000 / efficiency;
@@ -488,9 +485,11 @@ namespace FNPlugin
 
                 double heat_to_produce = power_recieved_f * (1 - efficiency);
 
-                heat_production_f = CheatOptions.IgnoreMaxTemperature 
-                    ? heat_to_produce
-                    : supplyFNResourcePerSecond(heat_to_produce, ResourceManager.FNRESOURCE_WASTEHEAT);
+                heat_production_f = heat_to_produce;
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                        .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, heat_to_produce * TimeWarp.fixedDeltaTime)
+                        .Build());
 
                 power_ratio = power_requested_f > 0 ? Math.Min(power_recieved_f / power_requested_f, 1.0) : 1;
             }

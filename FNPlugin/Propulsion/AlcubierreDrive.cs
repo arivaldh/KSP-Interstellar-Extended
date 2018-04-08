@@ -627,11 +627,10 @@ namespace FNPlugin
                 animationState = PluginHelper.SetUpAnimation(AnimationName, this.part);
 
             resourceBuffers = new ResourceBuffers();
-            resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, 2.0e+5, true));
             resourceBuffers.AddConfiguration(new ResourceBuffers.VariableConfig(InterstellarResourcesConfiguration.Instance.ExoticMatter));
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateVariable(InterstellarResourcesConfiguration.Instance.ExoticMatter, 0.001);
             resourceBuffers.Init(this.part);
+            resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5, true);
 
             try
             {
@@ -1088,10 +1087,12 @@ namespace FNPlugin
         private void ProduceWasteheat(double powerReturned)
         {
             if (!CheatOptions.IgnoreMaxTemperature)
-                supplyFNResourcePerSecond(powerReturned * 
-                    (isupgraded 
-                        ? wasteheatRatioUpgraded 
-                        : wasteheatRatio), ResourceManager.FNRESOURCE_WASTEHEAT);
+            {
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                        .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, powerReturned * (isupgraded ? wasteheatRatioUpgraded : wasteheatRatio) * TimeWarp.fixedDeltaTime)
+                        .Build());
+            }
         }
 
         private double GetPowerRequirementForWarp(double lightspeedFraction)

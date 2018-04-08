@@ -70,9 +70,8 @@ namespace FNPlugin
         public override void OnStart(PartModule.StartState state) 
         {
             resourceBuffers = new ResourceBuffers();
-            resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, 2.0e+4, true));
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.Init(this.part);
+            resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
 
             if (state == StartState.Editor) return;
 
@@ -175,12 +174,18 @@ namespace FNPlugin
                 {
                     if (_attached_engine.isOperational && _attached_engine.currentThrottle > 0)
                     {
-                        consumeFNResourcePerSecond(_charged_particles_received, ResourceManager.FNRESOURCE_WASTEHEAT);
+                        SyncVesselResourceManager.AddProcess(this, this,
+                            ConversionProcess.Builder()
+                                .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, _charged_particles_received * TimeWarp.fixedDeltaTime)
+                                .Build());
                         _previous_charged_particles_received = _charged_particles_received;
                     }
                     else if (_previous_charged_particles_received > 1)
                     {
-                        consumeFNResourcePerSecond(_previous_charged_particles_received, ResourceManager.FNRESOURCE_WASTEHEAT);
+                        SyncVesselResourceManager.AddProcess(this, this,
+                            ConversionProcess.Builder()
+                                .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, _previous_charged_particles_received * TimeWarp.fixedDeltaTime)
+                                .Build());
                         _previous_charged_particles_received /= 2;
                     }
                     else

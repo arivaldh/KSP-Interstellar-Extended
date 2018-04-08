@@ -320,9 +320,8 @@ namespace FNPlugin
                 DetermineTechLevel();
 
                 resourceBuffers = new ResourceBuffers();
-                resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, 2.0e+4, true));
-                resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
                 resourceBuffers.Init(this.part);
+                resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
 
                 if (state != StartState.Editor)
                     part.emissiveConstant = maxTempatureRadiators > 0 ? 1 - coldBathTemp / maxTempatureRadiators : 0.01;
@@ -428,8 +427,14 @@ namespace FNPlugin
                 // Lasers produce Wasteheat
                 if (!CheatOptions.IgnoreMaxTemperature)
                 {
-                    supplyFNResourcePerSecond(laserWasteheat, ResourceManager.FNRESOURCE_WASTEHEAT);
-                    supplyFNResourcePerSecond(absorbedWasteheat, ResourceManager.FNRESOURCE_WASTEHEAT);
+                    SyncVesselResourceManager.AddProcess(this, this,
+                        ConversionProcess.Builder()
+                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, laserWasteheat * TimeWarp.fixedDeltaTime)
+                            .Build());
+                    SyncVesselResourceManager.AddProcess(this, this,
+                        ConversionProcess.Builder()
+                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, absorbedWasteheat * TimeWarp.fixedDeltaTime)
+                            .Build());
                 }
 
                 // change ratio propellants Hydrogen/Fusion

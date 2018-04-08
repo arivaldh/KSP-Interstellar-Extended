@@ -433,9 +433,8 @@ namespace FNPlugin
                 Debug.Log("[KSPI] - ThermalNozzleController - calculate WasteHeat Capacity");
 
                 resourceBuffers = new ResourceBuffers();
-                resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, 2.0e+4, true));
-                resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
                 resourceBuffers.Init(this.part);
+                resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
 
                 Debug.Log("[KSPI] - ThermalNozzleController - find module implementing <ModuleEngines>");
 
@@ -1186,7 +1185,10 @@ namespace FNPlugin
                         ? wasteheatEfficiencyHighTemperature
                         : wasteheatEfficiencyLowTemperature;
 
-                    consumeFNResourcePerSecond(sootModifier * wasteheatEfficiencyModifier * power_received, ResourceManager.FNRESOURCE_WASTEHEAT);
+                    SyncVesselResourceManager.AddProcess(this, this,
+                        ConversionProcess.Builder()
+                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, sootModifier * wasteheatEfficiencyModifier * power_received * TimeWarp.fixedDeltaTime)
+                            .Build());
                 }
 
                 // calculate max thrust
@@ -1293,8 +1295,10 @@ namespace FNPlugin
                 if (!CheatOptions.IgnoreMaxTemperature)
                 {
                     var resourceRatio = getResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
-
-                    consumeFNResourcePerSecond(20 * resourceRatio * max_fuel_flow_rate, ResourceManager.FNRESOURCE_WASTEHEAT);
+                    SyncVesselResourceManager.AddProcess(this, this,
+                        ConversionProcess.Builder()
+                            .AddInput(ResourceManager.FNRESOURCE_WASTEHEAT, 20 * resourceRatio * max_fuel_flow_rate * TimeWarp.fixedDeltaTime)
+                            .Build());
                 }
 
                 // Calculate

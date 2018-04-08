@@ -146,9 +146,8 @@ namespace FNPlugin
                 hasrequiredupgrade = true;
 
             resourceBuffers = new ResourceBuffers();
-            resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, 2.0e+4, true));
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.Init(this.part);
+            resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
 
             if (state == StartState.Editor && this.HasTechsRequiredToUpgrade())
             {
@@ -252,10 +251,16 @@ namespace FNPlugin
                 if (!CheatOptions.IgnoreMaxTemperature)
                 {
                     // Lasers produce Wasteheat
-                    supplyFNResourcePerSecond(recievedPower * (1 - efficiency), ResourceManager.FNRESOURCE_WASTEHEAT);
+                    SyncVesselResourceManager.AddProcess(this, this,
+                        ConversionProcess.Builder()
+                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, recievedPower * (1 - efficiency) * TimeWarp.fixedDeltaTime)
+                            .Build());
 
                     // The Aborbed wasteheat from Fusion
-                    supplyFNResourcePerSecond(FusionWasteHeat * wasteHeatMultiplier * fusionRatio, ResourceManager.FNRESOURCE_WASTEHEAT);
+                    SyncVesselResourceManager.AddProcess(this, this,
+                        ConversionProcess.Builder()
+                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, FusionWasteHeat * wasteHeatMultiplier * fusionRatio * TimeWarp.fixedDeltaTime)
+                            .Build());
                 }
 
                 // change ratio propellants Hydrogen/Fusion

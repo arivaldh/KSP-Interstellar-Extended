@@ -131,7 +131,12 @@ namespace FNPlugin.Reactors
                     : consumeFNResourcePerSecond(requestedPower, ResourceManager.FNRESOURCE_MEGAJOULES);
 
                 if (maintenancePowerWasteheatRatio > 0)
-                    supplyFNResourcePerSecond(maintenancePowerWasteheatRatio * power_consumed, ResourceManager.FNRESOURCE_WASTEHEAT);
+                {
+                    SyncVesselResourceManager.AddProcess(this, this,
+                        ConversionProcess.Builder()
+                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, maintenancePowerWasteheatRatio * power_consumed * TimeWarp.fixedDeltaTime)
+                            .Build());
+                }
 
                 if (isSwappingFuelMode)
                 {

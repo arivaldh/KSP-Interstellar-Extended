@@ -275,7 +275,12 @@ namespace FNPlugin.Reactors
                 primaryPowerReceived = powerRequested;
 
             if (maintenancePowerWasteheatRatio > 0)
-                supplyFNResourcePerSecond(maintenancePowerWasteheatRatio * primaryPowerReceived, ResourceManager.FNRESOURCE_WASTEHEAT);
+            {
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                        .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, maintenancePowerWasteheatRatio * primaryPowerReceived * TimeWarp.fixedDeltaTime)
+                        .Build());
+            }
 
             // calculate effective primary power ratio
             var powerReceived = primaryPowerReceived;
@@ -432,7 +437,12 @@ namespace FNPlugin.Reactors
                         : part.RequestResource(primaryInputResource, primaryPowerRequest);
 
                 if (maintenancePowerWasteheatRatio > 0)
-                    supplyFNResourceFixed(maintenancePowerWasteheatRatio * returnedPrimaryPower, ResourceManager.FNRESOURCE_WASTEHEAT);
+                {
+                    SyncVesselResourceManager.AddProcess(this, this,
+                        ConversionProcess.Builder()
+                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, maintenancePowerWasteheatRatio * returnedPrimaryPower * TimeWarp.fixedDeltaTime)
+                            .Build());
+                }
 
                 var powerPerSecond = returnedPrimaryPower / timeWarpFixedDeltaTime;
 
