@@ -434,7 +434,7 @@ namespace FNPlugin
 
                 resourceBuffers = new ResourceBuffers();
                 resourceBuffers.Init(this.part);
-                resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
+                resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
 
                 Debug.Log("[KSPI] - ThermalNozzleController - find module implementing <ModuleEngines>");
 

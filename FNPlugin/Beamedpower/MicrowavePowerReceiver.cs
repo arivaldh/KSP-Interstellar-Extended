@@ -920,7 +920,7 @@ namespace FNPlugin
             resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_MEGAJOULES, StableMaximumReactorPower);
             resourceBuffers.UpdateVariable(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, StableMaximumReactorPower);
             resourceBuffers.Init(this.part);
-            resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5);
+            resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5);
 
             // look for any transmitter partmodule
             part_transmitter = part.FindModuleImplementing<MicrowavePowerTransmitter>();

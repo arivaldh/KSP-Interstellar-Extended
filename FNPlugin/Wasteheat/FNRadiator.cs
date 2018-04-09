@@ -619,7 +619,7 @@ namespace FNPlugin
 
             resourceBuffers = new ResourceBuffers();
             resourceBuffers.Init(this.part);
-            resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 1.0e+6);
+            resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 1.0e+6);
         }
 
         void radiatorIsEnabled_OnValueModified(object arg1)

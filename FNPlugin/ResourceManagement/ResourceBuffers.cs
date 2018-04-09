@@ -18,7 +18,7 @@ namespace FNPlugin.Extensions
                 this.ResourceName = resourceName;
             }
 
-            public virtual bool UpdateRequired() { return true; }
+            protected virtual bool UpdateRequired() { return true; }
 
             protected abstract void UpdateBufferForce();
 
@@ -73,7 +73,7 @@ namespace FNPlugin.Extensions
                 }
             }
 
-            public override bool UpdateRequired()
+            protected override bool UpdateRequired()
             {
                 bool updateRequired = false;
                 if (VariableChanged)
@@ -110,12 +110,17 @@ namespace FNPlugin.Extensions
                 this.BaseResourceMax = ResourceMultiplier * BaseResourceAmount * VariableMultiplier;
             }
 
+            protected virtual float GetTimeMultiplier()
+            {
+                return HighLogic.LoadedSceneIsFlight ? TimeWarp.fixedDeltaTime: 0.02f;
+            }
+
             protected override void UpdateBufferForce()
             {
                 var bufferedResource = part.Resources[ResourceName];
                 if (bufferedResource != null)
                 {
-                    float timeMultiplier = HighLogic.LoadedSceneIsFlight ? TimeWarp.fixedDeltaTime : 0.02f;
+                    float timeMultiplier = GetTimeMultiplier();
                     double maxWasteHeatRatio = ClampInitialMaxAmount && !initialized ? 0.95d : 1.0d;
 
                     var resourceRatio = Math.Max(0, Math.Min(maxWasteHeatRatio, bufferedResource.maxAmount > 0 ? bufferedResource.amount / bufferedResource.maxAmount : 0));
@@ -125,7 +130,7 @@ namespace FNPlugin.Extensions
                 initialized = true;
             }
 
-            public override bool UpdateRequired()
+            protected override bool UpdateRequired()
             {
                 bool updateRequired = false;
                 if (Math.Abs(TimeWarp.fixedDeltaTime - previousDeltaTime) > float.Epsilon || base.UpdateRequired())
@@ -134,6 +139,25 @@ namespace FNPlugin.Extensions
                     previousDeltaTime = TimeWarp.fixedDeltaTime;
                 }
                 return updateRequired;
+            }
+        }
+
+        public class HighTimeWarpConfig : TimeBasedConfig
+        {
+            public HighTimeWarpConfig(String resourceName, double resourceMultiplier = 1.0d, double baseResourceAmount = 1.0d, bool clampInitialMaxAmount = false)
+                : base(resourceName, resourceMultiplier, baseResourceAmount, clampInitialMaxAmount) { }
+
+            protected override float GetTimeMultiplier()
+            {
+                float currentFixedDeltaTime = base.GetTimeMultiplier();
+                if (currentFixedDeltaTime <= 1_000f * 0.02f)
+                {
+                    return 0.02f;
+                }
+                else
+                {
+                    return currentFixedDeltaTime / 1_000f;
+                }
             }
         }
 
@@ -189,11 +213,12 @@ namespace FNPlugin.Extensions
             UpdateBuffers();
         }
 
-        public void AddFixedWasteHeatBuffer(double wasteHeatMultiplier, double unitsPerMassUnit, bool preventOverheat = false)
+        public void AddHighTimeWarpWasteHeatBuffer(double wasteHeatMultiplier, double unitsPerMassUnit, bool preventOverheat = false)
         {
-            ResourceBuffers.TimeBasedConfig config = new TimeBasedConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, unitsPerMassUnit, preventOverheat);
+            ResourceBuffers.TimeBasedConfig config = new HighTimeWarpConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, unitsPerMassUnit, preventOverheat);
             config.ConfigureVariable(this.part.mass);
             config.Init(this.part);
+            this.AddConfiguration(config);
         }
 
         public void UpdateVariable(String resourceName, double variableMultiplier)

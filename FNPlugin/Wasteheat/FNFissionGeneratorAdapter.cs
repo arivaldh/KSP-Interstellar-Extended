@@ -50,7 +50,7 @@ namespace FNPlugin
                 resourceBuffers = new ResourceBuffers();
                 resourceBuffers.AddConfiguration(new ResourceBuffers.MaxAmountConfig(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, 50));
                 resourceBuffers.Init(this.part);
-                resourceBuffers.AddFixedWasteHeatBuffer(1, 2.0e+5, true);
+                resourceBuffers.AddHighTimeWarpWasteHeatBuffer(1, 2.0e+5, true);
             }
             catch (Exception e)
             {

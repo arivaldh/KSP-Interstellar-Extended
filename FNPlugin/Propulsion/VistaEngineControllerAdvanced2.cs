@@ -379,7 +379,7 @@ namespace FNPlugin
 
                 resourceBuffers = new ResourceBuffers();
                 resourceBuffers.Init(this.part);
-                resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
+                resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
 
                 if (state != StartState.Editor)
                     part.emissiveConstant = maxTempatureRadiators > 0 ? 1 - coldBathTemp / maxTempatureRadiators : 0.01;

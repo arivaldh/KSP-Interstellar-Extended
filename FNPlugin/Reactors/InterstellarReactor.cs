@@ -1062,7 +1062,7 @@ namespace FNPlugin.Reactors
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_THERMALPOWER, 4));
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, 4));
             resourceBuffers.Init(this.part);
-            resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 1.0e+5, true);
+            resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 1.0e+5, true);
 
             windowID = new System.Random(part.GetInstanceID()).Next(int.MaxValue);
             base.OnStart(state);

@@ -367,7 +367,7 @@ namespace FNPlugin
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_MEGAJOULES));
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, 50 / powerOutputMultiplier));
             resourceBuffers.Init(this.part);
-            resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0 + 5, true);
+            resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5, true);
 
             base.OnStart(state);
             //generatorType = originalName;

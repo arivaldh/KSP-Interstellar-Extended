@@ -630,7 +630,7 @@ namespace FNPlugin
             resourceBuffers.AddConfiguration(new ResourceBuffers.VariableConfig(InterstellarResourcesConfiguration.Instance.ExoticMatter));
             resourceBuffers.UpdateVariable(InterstellarResourcesConfiguration.Instance.ExoticMatter, 0.001);
             resourceBuffers.Init(this.part);
-            resourceBuffers.AddFixedWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5, true);
+            resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5, true);
 
             try
             {
