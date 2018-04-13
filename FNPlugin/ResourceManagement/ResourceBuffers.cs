@@ -133,7 +133,7 @@ namespace FNPlugin.Extensions
             protected override bool UpdateRequired()
             {
                 bool updateRequired = false;
-                if (Math.Abs(TimeWarp.fixedDeltaTime - previousDeltaTime) > float.Epsilon || base.UpdateRequired())
+                if (Math.Abs(GetTimeMultiplier() - previousDeltaTime) > float.Epsilon || base.UpdateRequired())
                 {
                     updateRequired = true;
                     previousDeltaTime = TimeWarp.fixedDeltaTime;
@@ -144,19 +144,23 @@ namespace FNPlugin.Extensions
 
         public class HighTimeWarpConfig : TimeBasedConfig
         {
+            // 1_000_000 will essentially NEVER scale (unless such high timewarp is added)!
+            public static readonly float SCALED_TIME_WARP = 1_000_000f;
+            public static readonly float NORMAL_TIME_WARP = 0.02f;
+
             public HighTimeWarpConfig(String resourceName, double resourceMultiplier = 1.0d, double baseResourceAmount = 1.0d, bool clampInitialMaxAmount = false)
                 : base(resourceName, resourceMultiplier, baseResourceAmount, clampInitialMaxAmount) { }
 
             protected override float GetTimeMultiplier()
             {
                 float currentFixedDeltaTime = base.GetTimeMultiplier();
-                if (currentFixedDeltaTime <= 1_000f * 0.02f)
+                if (currentFixedDeltaTime <= SCALED_TIME_WARP * NORMAL_TIME_WARP)
                 {
-                    return 0.02f;
+                    return NORMAL_TIME_WARP;
                 }
                 else
                 {
-                    return currentFixedDeltaTime / 1_000f;
+                    return currentFixedDeltaTime / SCALED_TIME_WARP;
                 }
             }
         }
@@ -213,7 +217,7 @@ namespace FNPlugin.Extensions
             UpdateBuffers();
         }
 
-        public void AddHighTimeWarpWasteHeatBuffer(double wasteHeatMultiplier, double unitsPerMassUnit, bool preventOverheat = false)
+        public void AddWasteHeatBuffer(double wasteHeatMultiplier, double unitsPerMassUnit, bool preventOverheat = false)
         {
             ResourceBuffers.TimeBasedConfig config = new HighTimeWarpConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, unitsPerMassUnit, preventOverheat);
             config.ConfigureVariable(this.part.mass);

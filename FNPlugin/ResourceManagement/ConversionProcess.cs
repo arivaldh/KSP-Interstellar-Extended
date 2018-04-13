@@ -9,10 +9,10 @@ namespace FNPlugin
     {
         public class Entry
         {
-            public string ResourceName { get; private set; }
-            public int ResourceId { get; private set; }
-            public double Amount { get; private set; }
-            public bool DumpExcess { get; private set; }
+            public string ResourceName { get; protected set; }
+            public int ResourceId { get; protected set; }
+            public double Amount { get; protected set; }
+            public bool DumpExcess { get; protected set; }
 
             public Entry(string resourceName, double amount, bool dumpExcess = false)
                 : this(resourceName, PartResourceLibrary.Instance.GetDefinition(resourceName).id, amount, dumpExcess) { }
@@ -34,7 +34,19 @@ namespace FNPlugin
             }
         }
 
-        public class ProcessBuilder
+        public class PerSecondEntry : Entry
+        {
+            public PerSecondEntry(string resourceName, double amount, bool dumpExcess = false)
+                : this(resourceName, PartResourceLibrary.Instance.GetDefinition(resourceName).id, amount, dumpExcess) { }
+
+            public PerSecondEntry(int resourceId, double amount, bool dumpExcess = false)
+                : this(PartResourceLibrary.Instance.GetDefinition(resourceId).name, resourceId, amount, dumpExcess) { }
+
+            public PerSecondEntry(string resourceName, int resourceId, double amount, bool dumpExcess = false)
+                : base(resourceName, resourceId, amount * TimeWarp.fixedDeltaTime, dumpExcess) { }
+        }
+
+        public class ProcessBuilder : Object
         {
             private List<Entry> inputs;
             private List<Entry> outputs;
@@ -57,19 +69,19 @@ namespace FNPlugin
                 return this;
             }
 
-            public ProcessBuilder AddInput(string resourceName, double amount, bool dumpExcess = false)
+            public ProcessBuilder AddInputPerSecond(string resourceName, double amount, bool dumpExcess = false)
             {
-                return AddInput(new Entry(resourceName, amount, dumpExcess));
+                return AddInput(new PerSecondEntry(resourceName, amount, dumpExcess));
             }
 
-            public ProcessBuilder AddInput(int resourceId, double amount, bool dumpExcess = false)
+            public ProcessBuilder AddInputPerSecond(int resourceId, double amount, bool dumpExcess = false)
             {
-                return AddInput(new Entry(resourceId, amount, dumpExcess));
+                return AddInput(new PerSecondEntry(resourceId, amount, dumpExcess));
             }
 
-            public ProcessBuilder AddInput(string resourceName, int resourceId, double amount, bool dumpExcess = false)
+            public ProcessBuilder AddInputPerSecond(string resourceName, int resourceId, double amount, bool dumpExcess = false)
             {
-                return AddInput(new Entry(resourceName, resourceId, amount, dumpExcess));
+                return AddInput(new PerSecondEntry(resourceName, resourceId, amount, dumpExcess));
             }
 
             public ProcessBuilder AddInput(Entry entry)
@@ -78,19 +90,19 @@ namespace FNPlugin
                 return this;
             }
 
-            public ProcessBuilder AddOutput(string resourceName, double amount, bool dumpExcess = false)
+            public ProcessBuilder AddOutputPerSecond(string resourceName, double amount, bool dumpExcess = false)
             {
-                return AddOutput(new Entry(resourceName, amount, dumpExcess));
+                return AddOutput(new PerSecondEntry(resourceName, amount, dumpExcess));
             }
 
-            public ProcessBuilder AddOutput(int resourceId, double amount, bool dumpExcess = false)
+            public ProcessBuilder AddOutputPerSecond(int resourceId, double amount, bool dumpExcess = false)
             {
-                return AddOutput(new Entry(resourceId, amount, dumpExcess));
+                return AddOutput(new PerSecondEntry(resourceId, amount, dumpExcess));
             }
 
-            public ProcessBuilder AddOutput(string resourceName, int resourceId, double amount, bool dumpExcess = false)
+            public ProcessBuilder AddOutputPerSecond(string resourceName, int resourceId, double amount, bool dumpExcess = false)
             {
-                return AddOutput(new Entry(resourceName, resourceId, amount, dumpExcess));
+                return AddOutput(new PerSecondEntry(resourceName, resourceId, amount, dumpExcess));
             }
 
             public ProcessBuilder AddOutput(Entry entry)
@@ -132,7 +144,7 @@ namespace FNPlugin
             }
 
             double minOutputRatio = 1.0d;
-            foreach (Entry entry in outputs)
+            foreach (PerSecondEntry entry in outputs)
             {
                 double entryRatio = manager.GetResourceSnapshot(entry.ResourceId).StorageLeft / entry.Amount;
                 if (entryRatio < minOutputRatio)
@@ -148,6 +160,15 @@ namespace FNPlugin
             FractionToProcess -= ratio;
 
             return ratio >= Double.Epsilon;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            //builder.AppendFormat("Process for Module {0} fractionToProcess={1}", this.module.GetResourceManagerDisplayName(), this.FractionToProcess);
+            builder.Append(toStringInputs());
+            builder.Append(toStringOutputs());
+            return builder.ToString();
         }
 
         public string toStringInputs()

@@ -50,7 +50,7 @@ namespace FNPlugin
                 resourceBuffers = new ResourceBuffers();
                 resourceBuffers.AddConfiguration(new ResourceBuffers.MaxAmountConfig(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, 50));
                 resourceBuffers.Init(this.part);
-                resourceBuffers.AddHighTimeWarpWasteHeatBuffer(1, 2.0e+5, true);
+                resourceBuffers.AddWasteHeatBuffer(1, 2.0e+5, true);
             }
             catch (Exception e)
             {
@@ -126,6 +126,7 @@ namespace FNPlugin
                     part.RequestResource(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, _field_addedToTanks.GetValue<float>(moduleGenerator));
                 }
 
+                resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
                 resourceBuffers.UpdateBuffers();
 
                 megaJouleGeneratorPowerSupply = supplyFNResourcePerSecondWithMax(generatorRate / 1000, generatorMax / 1000, ResourceManager.FNRESOURCE_MEGAJOULES);
@@ -134,7 +135,7 @@ namespace FNPlugin
                 {
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
-                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, (generatorRate / 10000.0d) * TimeWarp.fixedDeltaTime)
+                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, (generatorRate / 10000.0d), true)
                             .Build());
                 }
             }

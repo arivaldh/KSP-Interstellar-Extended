@@ -147,7 +147,7 @@ namespace FNPlugin
 
             resourceBuffers = new ResourceBuffers();
             resourceBuffers.Init(this.part);
-            resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
+            resourceBuffers.AddWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
 
             if (state == StartState.Editor && this.HasTechsRequiredToUpgrade())
             {
@@ -216,6 +216,7 @@ namespace FNPlugin
         {
             temperatureStr = part.temperature.ToString("0.00") + "K / " + part.maxTemp.ToString("0.00") + "K";
 
+            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateBuffers();
 
             if (curEngineT == null) return;
@@ -253,13 +254,13 @@ namespace FNPlugin
                     // Lasers produce Wasteheat
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
-                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, recievedPower * (1 - efficiency) * TimeWarp.fixedDeltaTime)
+                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, recievedPower * (1 - efficiency), true)
                             .Build());
 
                     // The Aborbed wasteheat from Fusion
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
-                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, FusionWasteHeat * wasteHeatMultiplier * fusionRatio * TimeWarp.fixedDeltaTime)
+                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, FusionWasteHeat * wasteHeatMultiplier * fusionRatio, true)
                             .Build());
                 }
 

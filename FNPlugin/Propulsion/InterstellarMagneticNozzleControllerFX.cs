@@ -71,7 +71,7 @@ namespace FNPlugin
         {
             resourceBuffers = new ResourceBuffers();
             resourceBuffers.Init(this.part);
-            resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
+            resourceBuffers.AddWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
 
             if (state == StartState.Editor) return;
 
@@ -156,6 +156,7 @@ namespace FNPlugin
            
         public void FixedUpdate() 
         {
+            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateBuffers();
 
             if (HighLogic.LoadedSceneIsFlight && _attached_engine != null && _attached_reactor != null && _attached_reactor.ChargedParticlePropulsionEfficiency > 0)
@@ -176,7 +177,7 @@ namespace FNPlugin
                     {
                         SyncVesselResourceManager.AddProcess(this, this,
                             ConversionProcess.Builder()
-                                .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, _charged_particles_received * TimeWarp.fixedDeltaTime)
+                                .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _charged_particles_received, true)
                                 .Build());
                         _previous_charged_particles_received = _charged_particles_received;
                     }
@@ -184,7 +185,7 @@ namespace FNPlugin
                     {
                         SyncVesselResourceManager.AddProcess(this, this,
                             ConversionProcess.Builder()
-                                .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, _previous_charged_particles_received * TimeWarp.fixedDeltaTime)
+                                .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _previous_charged_particles_received, true)
                                 .Build());
                         _previous_charged_particles_received /= 2;
                     }

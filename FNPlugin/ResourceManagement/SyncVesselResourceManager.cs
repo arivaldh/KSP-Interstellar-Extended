@@ -42,13 +42,24 @@ namespace FNPlugin
             }
         }
 
+        public static void RegisterRadiator(FNRadiator radiator)
+        {
+            ResourceSnapshot snapshot = SyncVesselResourceManager.GetSyncVesselResourceManager(radiator.vessel).GetResourceSnapshot(ResourceManager.FNRESOURCE_WASTEHEAT);
+            (snapshot as WasteHeatSnapshot).RegisterRadiator(radiator);
+        }
+
+        public ResourceSnapshot GetResourceSnapshot(string resourceName)
+        {
+            return GetResourceSnapshot(PartResourceLibrary.Instance.GetDefinition(resourceName).id);
+        }
+
         public ResourceSnapshot GetResourceSnapshot(int resourceId)
         {
             ResourceSnapshot snapshot = null;
 
             if (!snapshots.TryGetValue(resourceId, out snapshot))
             {
-                snapshot = new ResourceSnapshot(vessel, resourceId);
+                snapshot = SnapshotFactory.GetNewSnapshot(vessel, resourceId);
                 snapshots.Add(resourceId, snapshot);
             }
 
@@ -59,7 +70,6 @@ namespace FNPlugin
         {
             SyncVesselResourceManager manager = GetSyncVesselResourceManager(module.vessel);
             manager.InsertConversionProcess(callback, process);
-
         }
 
         protected void InsertConversionProcess(ISyncResourceModule callback, ConversionProcess process)
@@ -99,7 +109,6 @@ namespace FNPlugin
                 module.Notify(processes[module]);
             }
 
-            snapshots.Clear();
             processes.Clear();
         }
     }

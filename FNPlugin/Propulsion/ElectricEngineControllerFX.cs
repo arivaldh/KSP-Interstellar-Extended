@@ -242,7 +242,7 @@ namespace FNPlugin
 
                 resourceBuffers = new ResourceBuffers();
                 resourceBuffers.Init(this.part);
-                resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
+                resourceBuffers.AddWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
 
                 // initialize propellant
                 _propellants = ElectricEnginePropellant.GetPropellantsEngineForType(type);
@@ -425,6 +425,7 @@ namespace FNPlugin
 
             if (Current_propellant == null) return;
 
+            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateBuffers();
 
             if (!this.vessel.packed && !_warpToReal)
@@ -463,7 +464,7 @@ namespace FNPlugin
             var heatProduction = heatToProduce;
             SyncVesselResourceManager.AddProcess(this, this,
                 ConversionProcess.Builder()
-                    .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, heatToProduce * TimeWarp.fixedDeltaTime)
+                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, heatToProduce, true)
                     .Build());
 
             // update GUI Values

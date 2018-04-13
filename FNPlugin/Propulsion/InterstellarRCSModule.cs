@@ -306,7 +306,7 @@ namespace FNPlugin
                 heat_production_f = heat_to_produce;
                 SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
-                        .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, heat_to_produce * TimeWarp.fixedDeltaTime)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, heat_to_produce, true)
                         .Build());
 
                 power_ratio = power_requested_f > 0 ? Math.Min(power_recieved_f / power_requested_f, 1) : 1;

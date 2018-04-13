@@ -278,7 +278,7 @@ namespace FNPlugin.Reactors
             {
                 SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
-                        .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, maintenancePowerWasteheatRatio * primaryPowerReceived * TimeWarp.fixedDeltaTime)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, maintenancePowerWasteheatRatio * primaryPowerReceived, true)
                         .Build());
             }
 
@@ -440,7 +440,7 @@ namespace FNPlugin.Reactors
                 {
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
-                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, maintenancePowerWasteheatRatio * returnedPrimaryPower * TimeWarp.fixedDeltaTime)
+                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, maintenancePowerWasteheatRatio * returnedPrimaryPower, true)
                             .Build());
                 }
 

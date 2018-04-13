@@ -614,7 +614,7 @@ namespace FNPlugin
                 {
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
-                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, receivedPowerFixedDelta * transmissionWasteRatio * TimeWarp.fixedDeltaTime)
+                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, receivedPowerFixedDelta * transmissionWasteRatio, true)
                             .Build());
                 }
 

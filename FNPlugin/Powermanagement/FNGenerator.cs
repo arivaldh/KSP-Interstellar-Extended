@@ -367,7 +367,7 @@ namespace FNPlugin
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_MEGAJOULES));
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, 50 / powerOutputMultiplier));
             resourceBuffers.Init(this.part);
-            resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5, true);
+            resourceBuffers.AddWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5, true);
 
             base.OnStart(state);
             //generatorType = originalName;
@@ -919,7 +919,7 @@ namespace FNPlugin
                         {
                             SyncVesselResourceManager.AddProcess(this, this,
                                 ConversionProcess.Builder()
-                                    .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond * TimeWarp.fixedDeltaTime)
+                                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond, true)
                                     .Build());
                         }
 
@@ -951,7 +951,7 @@ namespace FNPlugin
                         {
                             SyncVesselResourceManager.AddProcess(this, this,
                                 ConversionProcess.Builder()
-                                    .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond * TimeWarp.fixedDeltaTime)
+                                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond, true)
                                     .Build());
                         }
 
@@ -1012,6 +1012,7 @@ namespace FNPlugin
                 var megawattBufferMultiplier = (attachedPowerSource.PowerBufferBonus + 1) * maxStableMegaWattPower;
                 resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_MEGAJOULES, megawattBufferMultiplier);
                 resourceBuffers.UpdateVariable(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, megawattBufferMultiplier);
+                resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             }
             resourceBuffers.UpdateBuffers();
         }
@@ -1071,6 +1072,7 @@ namespace FNPlugin
             var megawattBufferMultiplier = (attachedPowerSource.PowerBufferBonus + 1) * maxStableMegaWattPower;
             resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_MEGAJOULES, megawattBufferMultiplier * powerDownFraction);
             resourceBuffers.UpdateVariable(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, megawattBufferMultiplier * powerDownFraction);
+            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateBuffers();
         }
 

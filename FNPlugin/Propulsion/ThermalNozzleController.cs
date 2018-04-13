@@ -434,7 +434,7 @@ namespace FNPlugin
 
                 resourceBuffers = new ResourceBuffers();
                 resourceBuffers.Init(this.part);
-                resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
+                resourceBuffers.AddWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
 
                 Debug.Log("[KSPI] - ThermalNozzleController - find module implementing <ModuleEngines>");
 
@@ -967,6 +967,7 @@ namespace FNPlugin
 
                 if (myAttachedEngine == null) return;
 
+                resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
                 resourceBuffers.UpdateBuffers();
 
                 if (AttachedReactor == null)
@@ -1187,7 +1188,7 @@ namespace FNPlugin
 
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
-                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, sootModifier * wasteheatEfficiencyModifier * power_received * TimeWarp.fixedDeltaTime)
+                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, sootModifier * wasteheatEfficiencyModifier * power_received, true)
                             .Build());
                 }
 
@@ -1297,7 +1298,7 @@ namespace FNPlugin
                     var resourceRatio = getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
-                            .AddInput(ResourceManager.FNRESOURCE_WASTEHEAT, 20 * resourceRatio * max_fuel_flow_rate * TimeWarp.fixedDeltaTime)
+                            .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, 20 * resourceRatio * max_fuel_flow_rate)
                             .Build());
                 }
 

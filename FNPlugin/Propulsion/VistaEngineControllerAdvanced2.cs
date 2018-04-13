@@ -379,7 +379,7 @@ namespace FNPlugin
 
                 resourceBuffers = new ResourceBuffers();
                 resourceBuffers.Init(this.part);
-                resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
+                resourceBuffers.AddWasteHeatBuffer(wasteHeatMultiplier, 2.0e+4, true);
 
                 if (state != StartState.Editor)
                     part.emissiveConstant = maxTempatureRadiators > 0 ? 1 - coldBathTemp / maxTempatureRadiators : 0.01;
@@ -498,6 +498,7 @@ namespace FNPlugin
 
             KillKerbalsWithRadiation(throttle);
 
+            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateBuffers();
 
             if (throttle > 0)
@@ -519,7 +520,7 @@ namespace FNPlugin
                 {
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
-                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, enginePowerRequirement * TimeWarp.fixedDeltaTime)
+                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, enginePowerRequirement, true)
                             .Build());
                 }
 
@@ -529,7 +530,7 @@ namespace FNPlugin
                 absorbedWasteheat = FusionWasteHeat * wasteHeatMultiplier * fusionRatio * throttle * neutronbsorbionBonus;
                 SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
-                        .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, absorbedWasteheat * TimeWarp.fixedDeltaTime)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, absorbedWasteheat, true)
                         .Build());
 
                 // change ratio propellants Hydrogen/Fusion

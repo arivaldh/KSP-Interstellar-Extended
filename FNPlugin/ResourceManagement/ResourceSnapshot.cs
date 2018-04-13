@@ -8,14 +8,14 @@ namespace FNPlugin
 {
     public class ResourceSnapshot
     {
-        public double CurrentAmount
+        public virtual double CurrentAmount
         {
             get
             {
                 return storedAmount + changedAmount;
             }
         }
-        public double StorageLeft
+        public virtual double StorageLeft
         {
             get
             {
@@ -23,13 +23,13 @@ namespace FNPlugin
             }
         }
 
-        private double storedAmount;
-        private double maxAmount;
-        private double changedAmount;
+        protected double storedAmount;
+        protected double maxAmount;
+        protected double changedAmount;
 
-        private readonly string resourceName;
-        private readonly int resourceId;
-        private readonly Vessel vessel;
+        protected readonly string resourceName;
+        protected readonly int resourceId;
+        protected readonly Vessel vessel;
 
         public ResourceSnapshot(Vessel vessel, int resourceId)
             : this(vessel, resourceId, PartResourceLibrary.Instance.GetDefinition(resourceId).name) { }
@@ -42,7 +42,7 @@ namespace FNPlugin
             this.vessel = vessel;
             this.resourceId = resourceId;
             this.resourceName = resourceName;
-            vessel.GetConnectedResourceTotals(resourceId, out this.storedAmount, out this.maxAmount);
+            Reinitialize();
         }
 
         public void Produce(double amount)
@@ -55,7 +55,18 @@ namespace FNPlugin
             changedAmount -= amount;
         }
 
-        public void Commit()
+        public virtual double GetStorageRatio()
+        {
+            return maxAmount > Double.Epsilon ? (CurrentAmount / maxAmount) : 0.0d;
+        }
+
+        protected virtual void Reinitialize()
+        {
+            changedAmount = 0;
+            vessel.GetConnectedResourceTotals(resourceId, out this.storedAmount, out this.maxAmount);
+        }
+
+        public virtual void Commit()
         {
             vessel.GetConnectedResourceTotals(resourceId, out this.storedAmount, out this.maxAmount);
 
@@ -68,18 +79,102 @@ namespace FNPlugin
 
             if (Math.Abs(changedAmount) > Double.Epsilon)
                 RequestResource();
+
+            Reinitialize();
         }
 
-        private void RequestResource()
+        protected virtual void RequestResource()
         {
             double provided = -vessel.Parts.FirstOrDefault().RequestResource(resourceId, -changedAmount, ResourceFlowMode.ALL_VESSEL_BALANCE);
-            Debug.LogError(String.Format("resourceName = {0}, storedAmount = {1}, requested = {2}, provided = {3}", resourceName, storedAmount, -changedAmount, -provided));
 
             if (changedAmount < 0 && Math.Abs(provided - changedAmount) > 0.0001)
             {
                 Debug.LogError("Requested more resource than the vessel was able to provide!");
                 Debug.LogError(String.Format("resourceName = {0}, provided = {1}, changedAmount = {2}", resourceName, provided, changedAmount));
             }
+        }
+    }
+
+    public class WasteHeatSnapshot : ResourceSnapshot
+    {
+        private static readonly double TIME_TICK_RATIO = 0.10d;
+
+        public override double StorageLeft
+        {
+            get
+            {
+                return double.MaxValue;
+            }
+        }
+
+        private readonly List<FNRadiator> radiators;
+        private double alreadyGeneratedHeat;
+        // Consumed = Radiated + Convected
+        private double alreadyConsumedHeat;
+
+        public WasteHeatSnapshot(Vessel vessel, int resourceId)
+            : this(vessel, resourceId, PartResourceLibrary.Instance.GetDefinition(resourceId).name) { }
+
+        public WasteHeatSnapshot(Vessel vessel, string resourceName)
+            : this(vessel, PartResourceLibrary.Instance.GetDefinition(resourceName).id, resourceName) { }
+
+        public WasteHeatSnapshot(Vessel vessel, int resourceId, string resourceName) : base(vessel, resourceId, resourceName)
+        {
+            radiators = new List<FNRadiator>();
+        }
+
+        public override double GetStorageRatio()
+        {
+            double ratio = maxAmount > Double.Epsilon ? ((storedAmount + alreadyGeneratedHeat - alreadyConsumedHeat) / maxAmount) : 0.0d;
+            return Math.Max(0, Math.Min(1, ratio));
+        }
+
+        public void RegisterRadiator(FNRadiator radiator)
+        {
+            radiators.Add(radiator);
+        }
+
+        public void DeRegisterRadiator(FNRadiator radiator)
+        {
+            radiators.Remove(radiator);
+        }
+
+        public override void Commit()
+        {
+            int timeTicks = Math.Max(1, (int)Math.Ceiling(changedAmount / (maxAmount * TIME_TICK_RATIO)));
+            double warpTick = ((double)TimeWarp.fixedDeltaTime) / timeTicks;
+
+            double tickGenerated = changedAmount / timeTicks;
+            for (int tick = 0; tick < timeTicks; tick++)
+            {
+                double tickConsumed = 0.0d;
+                radiators.ForEach(radiator => tickConsumed += warpTick * radiator.GetConsumedWasteHeatPerSecond());
+
+                alreadyGeneratedHeat += tickGenerated;
+                alreadyConsumedHeat += tickConsumed;
+            }
+
+            changedAmount = alreadyGeneratedHeat - alreadyConsumedHeat;
+
+            base.Commit();
+
+            alreadyGeneratedHeat = 0;
+            alreadyConsumedHeat = 0;
+            radiators.Clear();
+        }
+    }
+
+    public class PTPSnapshot : ResourceSnapshot
+    {
+        public PTPSnapshot(Vessel vessel, int resourceId)
+            : this(vessel, resourceId, PartResourceLibrary.Instance.GetDefinition(resourceId).name) { }
+
+        public PTPSnapshot(Vessel vessel, string resourceName)
+            : this(vessel, PartResourceLibrary.Instance.GetDefinition(resourceName).id, resourceName) { }
+
+        public PTPSnapshot(Vessel vessel, int resourceId, string resourceName) : base(vessel, resourceId, resourceName)
+        {
+
         }
     }
 }

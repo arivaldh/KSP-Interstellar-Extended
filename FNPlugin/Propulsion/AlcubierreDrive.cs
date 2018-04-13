@@ -630,7 +630,7 @@ namespace FNPlugin
             resourceBuffers.AddConfiguration(new ResourceBuffers.VariableConfig(InterstellarResourcesConfiguration.Instance.ExoticMatter));
             resourceBuffers.UpdateVariable(InterstellarResourcesConfiguration.Instance.ExoticMatter, 0.001);
             resourceBuffers.Init(this.part);
-            resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5, true);
+            resourceBuffers.AddWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5, true);
 
             try
             {
@@ -895,6 +895,7 @@ namespace FNPlugin
             powerRequirementForMaximumAllowedLightSpeed = GetPowerRequirementForWarp(_engineThrotle[maximumWarpSpeedFactor]);
             currentPowerRequirementForWarp = GetPowerRequirementForWarp(_engineThrotle[selected_factor]);
 
+            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateBuffers();
 
             // calculate Exotic Matter Capacity
@@ -1090,7 +1091,7 @@ namespace FNPlugin
             {
                 SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
-                        .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, powerReturned * (isupgraded ? wasteheatRatioUpgraded : wasteheatRatio) * TimeWarp.fixedDeltaTime)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, powerReturned * (isupgraded ? wasteheatRatioUpgraded : wasteheatRatio), true)
                         .Build());
             }
         }

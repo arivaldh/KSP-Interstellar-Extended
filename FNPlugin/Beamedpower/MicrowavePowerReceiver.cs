@@ -920,7 +920,7 @@ namespace FNPlugin
             resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_MEGAJOULES, StableMaximumReactorPower);
             resourceBuffers.UpdateVariable(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, StableMaximumReactorPower);
             resourceBuffers.Init(this.part);
-            resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5);
+            resourceBuffers.AddWasteHeatBuffer(wasteHeatMultiplier, 2.0e+5);
 
             // look for any transmitter partmodule
             part_transmitter = part.FindModuleImplementing<MicrowavePowerTransmitter>();
@@ -973,6 +973,7 @@ namespace FNPlugin
                 resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_THERMALPOWER, StableMaximumReactorPower);
                 resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_MEGAJOULES, StableMaximumReactorPower);
                 resourceBuffers.UpdateVariable(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, StableMaximumReactorPower);
+                resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
                 resourceBuffers.UpdateBuffers();
             }
             catch (Exception e)
@@ -994,6 +995,7 @@ namespace FNPlugin
                 resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_THERMALPOWER, StableMaximumReactorPower * powerDownFraction);
                 resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_MEGAJOULES, StableMaximumReactorPower * powerDownFraction);
                 resourceBuffers.UpdateVariable(ResourceManager.STOCK_RESOURCE_ELECTRICCHARGE, StableMaximumReactorPower * powerDownFraction);
+                resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
                 resourceBuffers.UpdateBuffers();
             }
         }
@@ -1606,7 +1608,7 @@ namespace FNPlugin
                                 var final_thermal_wasteheat = powerGeneratedResult.currentSupply + supply_ratio * total_conversion_waste_heat_production;
                                 SyncVesselResourceManager.AddProcess(this, this,
                                     ConversionProcess.Builder()
-                                    .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, final_thermal_wasteheat * TimeWarp.fixedDeltaTime)
+                                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, final_thermal_wasteheat, true)
                                     .Build());
                             }
 
@@ -1657,7 +1659,7 @@ namespace FNPlugin
                             var solarWasteheat = solarInputMegajoules * (1 - effectiveSolarThermalElectricEfficiency);
                             SyncVesselResourceManager.AddProcess(this, this,
                                 ConversionProcess.Builder()
-                                    .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, supply_ratio * (total_conversion_waste_heat_production + solarWasteheat) * TimeWarp.fixedDeltaTime)
+                                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, supply_ratio * (total_conversion_waste_heat_production + solarWasteheat), true)
                                     .Build());
                         }
 

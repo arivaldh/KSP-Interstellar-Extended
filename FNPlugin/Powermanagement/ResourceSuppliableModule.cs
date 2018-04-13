@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace FNPlugin
 {
-    abstract class ResourceSuppliableModule : PartModule, IResourceSuppliable, IResourceSupplier, ISyncResourceModule
+    abstract public class ResourceSuppliableModule : PartModule, IResourceSuppliable, IResourceSupplier, ISyncResourceModule
     {
         [KSPField(isPersistant = false, guiActive = false, guiName = "Update Counter")]
         public long updateCounter = 0;
@@ -441,10 +441,7 @@ namespace FNPlugin
                 Debug.Log("[KSPI] - getResourceBarRatio illegal values.");
                 return 0;
             }
-            double amount;
-            double maxAmount;
-            this.vessel.GetConnectedResourceTotals(PartResourceLibrary.Instance.GetDefinition(resourceName).id, out amount, out maxAmount);
-            return maxAmount > Double.Epsilon ? (amount / maxAmount) : 0;
+            return SyncVesselResourceManager.GetSyncVesselResourceManager(this.vessel).GetResourceSnapshot(resourceName).GetStorageRatio();
         }
 
         public double getResourceBarRatioEnd(String resourcename)
@@ -625,9 +622,7 @@ namespace FNPlugin
             //Debug.Log("processes in " + this.part.name);
             //foreach (ConversionProcess process in processes)
             //{
-            //    Debug.Log("process " + process + " finished with fractionToProcess = " + process.FractionToProcess);
-            //    Debug.Log(process.toStringInputs());
-            //    Debug.Log(process.toStringOutputs());
+            //    Debug.Log(process);
             //}
         }
 

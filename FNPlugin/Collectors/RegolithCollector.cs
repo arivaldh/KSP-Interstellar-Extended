@@ -440,7 +440,7 @@ namespace FNPlugin.Collectors
                 // push the heat onto them
                 SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
-                        .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, dTotalWasteHeatProduction * TimeWarp.fixedDeltaTime)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, dTotalWasteHeatProduction, true)
                         .Build());
             }
             

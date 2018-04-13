@@ -108,7 +108,6 @@ namespace FNPlugin
         }
     }
 
-
     [KSPModule("Radiator")]
     class StackFNRadiator : FNRadiator { }
 
@@ -116,7 +115,7 @@ namespace FNPlugin
     class FlatFNRadiator : FNRadiator { }
 
     [KSPModule("Radiator")]
-    class FNRadiator : ResourceSuppliableModule    
+    public class FNRadiator : ResourceSuppliableModule
     {
         // persitant
         [KSPField(isPersistant = true, guiActive = true, guiName = "Radiator Cooling"), UI_Toggle(disabledText = "Off", enabledText = "On", affectSymCounterparts= UI_Scene.All)]
@@ -253,7 +252,6 @@ namespace FNPlugin
         private AnimationState[] heatStates;
         private ModuleDeployableRadiator _moduleDeployableRadiator;
         private ModuleActiveRadiator _moduleActiveRadiator;
-        private ResourceManager wasteheatManager;
         private ModuleDeployablePart.DeployState radiatorState;
         private ResourceBuffers resourceBuffers;
 
@@ -368,7 +366,7 @@ namespace FNPlugin
 
         public static double getAverageRadiatorTemperatureForVessel(Vessel vess) 
         {
-            var radiator_vessel = GetRadiatorsForVessel(vess).Where(r => r != null).ToList(); ;
+            var radiator_vessel = GetRadiatorsForVessel(vess).Where(r => r != null).ToList();
 
             if (radiator_vessel.Any())
                 return radiator_vessel.Max(r => r.GetAverateRadiatorTemperature());
@@ -619,7 +617,7 @@ namespace FNPlugin
 
             resourceBuffers = new ResourceBuffers();
             resourceBuffers.Init(this.part);
-            resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 1.0e+6);
+            resourceBuffers.AddWasteHeatBuffer(wasteHeatMultiplier, 1.0e+6);
         }
 
         void radiatorIsEnabled_OnValueModified(object arg1)
@@ -720,105 +718,118 @@ namespace FNPlugin
                 if (!active)
                     base.OnFixedUpdate();
 
+                resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
                 resourceBuffers.UpdateBuffers();
 
-                effectiveRadiatorArea = EffectiveRadiatorArea;
-
-                var external_temperature = FlightGlobals.getExternalTemperature(part.transform.position);
-
                 wasteheatRatio = getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
-
-                if (Double.IsNaN(wasteheatRatio))
+                if (!CheatOptions.IgnoreMaxTemperature && wasteheatRatio >= 1 && CurrentRadiatorTemperature >= maxRadiatorTemperature)
                 {
-                    Debug.LogError("FNRadiator: FixedUpdate Single.IsNaN detected in wasteheatRatio");
-                    return;
-                }
-
-                var normalized_atmosphere = Math.Min(vessel.atmDensity, 1);
-
-                maxCurrentTemperature = maxAtmosphereTemperature * Math.Max(normalized_atmosphere, 0) + maxVacuumTemperature * Math.Max(Math.Min(1 - vessel.atmDensity, 1), 0);
-
-                radiator_temperature_temp_val = external_temperature + Math.Min((maxRadiatorTemperature - external_temperature) * Math.Sqrt(wasteheatRatio), maxCurrentTemperature - external_temperature);
-
-                var efficiency = 1 - Math.Pow(1 - wasteheatRatio, 400);
-                var delta_temp = Math.Max(radiator_temperature_temp_val - Math.Max(external_temperature * normalized_atmosphere, 2.7), 0);
-
-                if (radiatorIsEnabled)
-                {
-                    if (!CheatOptions.IgnoreMaxTemperature && wasteheatRatio >= 1 && CurrentRadiatorTemperature >= maxRadiatorTemperature)
-                    {
-                        explode_counter++;
-                        if (explode_counter > 25)
-                            part.explode();
-                    }
-                    else
-                        explode_counter = 0;
-
-                    var thermal_power_dissip_per_second = efficiency * Math.Pow(delta_temp, 4) * GameConstants.stefan_const * effectiveRadiatorArea / 1e6;
-
-                    if (Double.IsNaN(thermal_power_dissip_per_second))
-                        Debug.LogWarning("FNRadiator: FixedUpdate Single.IsNaN detected in fixed_thermal_power_dissip");
-
-                    radiatedThermalPower = canRadiateHeat ? consumeWasteHeatPerSecond(thermal_power_dissip_per_second) : 0;
-
-                    if (Double.IsNaN(radiatedThermalPower))
-                        Debug.LogError("FNRadiator: FixedUpdate Single.IsNaN detected in radiatedThermalPower after call consumeWasteHeat (" + thermal_power_dissip_per_second + ")");
-
-                    instantaneous_rad_temp = Math.Max(radiator_temperature_temp_val, Math.Max(FlightGlobals.getExternalTemperature(vessel.altitude, vessel.mainBody), 2.7));
-
-                    if (Double.IsNaN(instantaneous_rad_temp))
-                        Debug.LogError("FNRadiator: FixedUpdate Single.IsNaN detected in instantaneous_rad_temp after reading external temperature");
-
-                    CurrentRadiatorTemperature = instantaneous_rad_temp;
-
-                    if (_moduleDeployableRadiator)
-                        _moduleDeployableRadiator.hasPivot = pivotEnabled;
+                    explode_counter++;
+                    if (explode_counter > 25)
+                        part.explode();
                 }
                 else
-                {
-                    double thermal_power_dissip_per_second = efficiency * Math.Pow(Math.Max(delta_temp - external_temperature, 0), 4) * GameConstants.stefan_const * effectiveRadiatorArea / 0.5e7;
+                    explode_counter = 0;
 
-                    radiatedThermalPower = canRadiateHeat ? consumeWasteHeatPerSecond(thermal_power_dissip_per_second) : 0;
-                    
-                    instantaneous_rad_temp = Math.Max(radiator_temperature_temp_val, Math.Max(FlightGlobals.getExternalTemperature(vessel.altitude, vessel.mainBody), 2.7));
-
-                    CurrentRadiatorTemperature = instantaneous_rad_temp;
-                }
-
-                if (vessel.atmDensity > 0)
-                {
-                    var pressure = vessel.atmDensity;
-                    dynamic_pressure = 0.60205 * pressure * vessel.srf_velocity.sqrMagnitude / 101325;
-                    pressure += dynamic_pressure;
-
-                    var splashBonus = Math.Max(part.submergedPortion * 10, 1);
-                    var convection_delta_temp = Math.Max(0, CurrentRadiatorTemperature - external_temperature);
-                    var conv_power_dissip = efficiency * pressure * convection_delta_temp * effectiveRadiatorArea * 0.001 * convectiveBonus * splashBonus;
-
-                    if (!radiatorIsEnabled)
-                        conv_power_dissip = conv_power_dissip / 2;
-
-                    convectedThermalPower = canRadiateHeat ? consumeWasteHeatPerSecond(conv_power_dissip) : 0;
-
-                    if (update_count == DEPLOYMENT_DELAY)
-                        DeployMentControl(dynamic_pressure);
-                }
-                else
-                {
-                    convectedThermalPower = 0;
-
-                    if (!radiatorIsEnabled && isAutomated && canRadiateHeat && showControls && update_count == DEPLOYMENT_DELAY)
-                    {
-                        Debug.Log("[KSPI] - FixedUpdate Automated Deplotment ");
-                        Deploy();
-                    }
-                }
-
+                SyncVesselResourceManager.RegisterRadiator(this);
             }
             catch (Exception e)
             {
                 Debug.LogError("[KSPI] - Exception on " +  part.name + " durring FNRadiator.FixedUpdate with message " + e.Message);
             }
+        }
+
+        public double GetConsumedWasteHeatPerSecond()
+        {
+            effectiveRadiatorArea = EffectiveRadiatorArea;
+
+            var external_temperature = FlightGlobals.getExternalTemperature(part.transform.position);
+
+            wasteheatRatio = getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
+
+            if (Double.IsNaN(wasteheatRatio))
+            {
+                Debug.LogError("FNRadiator: FixedUpdate Single.IsNaN detected in wasteheatRatio");
+                return 0.0d;
+            }
+
+            var normalized_atmosphere = Math.Min(vessel.atmDensity, 1);
+
+            maxCurrentTemperature = maxAtmosphereTemperature * Math.Max(normalized_atmosphere, 0) + maxVacuumTemperature * Math.Max(Math.Min(1 - vessel.atmDensity, 1), 0);
+
+            radiator_temperature_temp_val = external_temperature + Math.Min((maxRadiatorTemperature - external_temperature) * Math.Sqrt(wasteheatRatio), maxCurrentTemperature - external_temperature);
+
+            var efficiency = 1 - Math.Pow(1 - wasteheatRatio, 400);
+            var delta_temp = Math.Max(radiator_temperature_temp_val - Math.Max(external_temperature * normalized_atmosphere, 2.7), 0);
+
+            if (radiatorIsEnabled)
+            {
+                var thermal_power_dissip_per_second = efficiency * Math.Pow(delta_temp, 4) * GameConstants.stefan_const * effectiveRadiatorArea / 1e6;
+
+                if (Double.IsNaN(thermal_power_dissip_per_second))
+                    Debug.LogWarning("FNRadiator: FixedUpdate NaN detected in fixed_thermal_power_dissip");
+
+                radiatedThermalPower = (canRadiateHeat ? thermal_power_dissip_per_second : 0.0d);
+
+                if (Double.IsNaN(radiatedThermalPower))
+                    Debug.LogError("FNRadiator: FixedUpdate NaN detected in radiatedThermalPower");
+
+                instantaneous_rad_temp = Math.Max(radiator_temperature_temp_val, Math.Max(FlightGlobals.getExternalTemperature(vessel.altitude, vessel.mainBody), 2.7));
+
+                if (Double.IsNaN(instantaneous_rad_temp))
+                    Debug.LogError("FNRadiator: FixedUpdate NaN detected in instantaneous_rad_temp after reading external temperature");
+
+                CurrentRadiatorTemperature = instantaneous_rad_temp;
+
+                if (_moduleDeployableRadiator)
+                    _moduleDeployableRadiator.hasPivot = pivotEnabled;
+            }
+            else
+            {
+                double thermal_power_dissip_per_second = efficiency * Math.Pow(Math.Max(delta_temp - external_temperature, 0), 4) * GameConstants.stefan_const * effectiveRadiatorArea / 0.5e7;
+
+                radiatedThermalPower = (canRadiateHeat ? thermal_power_dissip_per_second : 0.0d);
+
+                if (Double.IsNaN(radiatedThermalPower))
+                    Debug.LogError("FNRadiator: FixedUpdate NaN detected in radiatedThermalPower");
+
+                instantaneous_rad_temp = Math.Max(radiator_temperature_temp_val, Math.Max(FlightGlobals.getExternalTemperature(vessel.altitude, vessel.mainBody), 2.7));
+
+                CurrentRadiatorTemperature = instantaneous_rad_temp;
+            }
+
+            if (vessel.atmDensity > 0)
+            {
+                var pressure = vessel.atmDensity;
+                dynamic_pressure = 0.60205 * pressure * vessel.srf_velocity.sqrMagnitude / 101325;
+                pressure += dynamic_pressure;
+
+                var splashBonus = Math.Max(part.submergedPortion * 10, 1);
+                var convection_delta_temp = Math.Max(0, CurrentRadiatorTemperature - external_temperature);
+                var conv_power_dissip = efficiency * pressure * convection_delta_temp * effectiveRadiatorArea * 0.001 * convectiveBonus * splashBonus;
+
+                if (!radiatorIsEnabled)
+                    conv_power_dissip = conv_power_dissip / 2;
+
+                convectedThermalPower = (canRadiateHeat ? conv_power_dissip : 0.0d);
+
+                if (Double.IsNaN(convectedThermalPower))
+                    Debug.LogError("FNRadiator: FixedUpdate NaN detected in convectedThermalPower");
+
+                if (update_count == DEPLOYMENT_DELAY)
+                    DeployMentControl(dynamic_pressure);
+            }
+            else
+            {
+                convectedThermalPower = 0.0d;
+
+                if (!radiatorIsEnabled && isAutomated && canRadiateHeat && showControls && update_count == DEPLOYMENT_DELAY)
+                {
+                    Debug.Log("[KSPI] - FixedUpdate Automated Deployment ");
+                    Deploy();
+                }
+            }
+            return radiatedThermalPower + convectedThermalPower;
         }
 
         private void DeployMentControl(double dynamic_pressure)
@@ -850,25 +861,6 @@ namespace FNPlugin
             }
         }
 
-        private double consumeWasteHeatPerSecond(double wasteheatToConsume)
-        {
-            if (radiatorIsEnabled)
-            {
-                var consumedWasteheat = wasteheatToConsume;
-                SyncVesselResourceManager.AddProcess(this, this,
-                    ConversionProcess.Builder()
-                        .AddInput(ResourceManager.FNRESOURCE_WASTEHEAT, wasteheatToConsume * TimeWarp.fixedDeltaTime)
-                        .Build());
-
-                if (Double.IsNaN(consumedWasteheat))
-                    return 0;
-                    
-                return consumedWasteheat;
-            }
-
-            return 0;
-        }
-
         protected double current_rad_temp;
         public double CurrentRadiatorTemperature 
         {
@@ -893,9 +885,8 @@ namespace FNPlugin
         public override string GetInfo()
         {
             DetermineGenerationType();
-            effectiveRadiatorArea = EffectiveRadiatorArea;
 
-            var stefan_area = GameConstants.stefan_const * effectiveRadiatorArea;
+            var stefan_area = GameConstants.stefan_const * EffectiveRadiatorArea;
             var sb = new StringBuilder();
 
             sb.Append(String.Format("Base surface area: {0:F2} m\xB2 \n", radiatorArea));
@@ -913,7 +904,7 @@ namespace FNPlugin
                 sb.Append(String.Format("Mk4: {0:F0} K {1:F3} MW\n", PluginHelper.RadiatorTemperatureMk4, stefan_area * Math.Pow(PluginHelper.RadiatorTemperatureMk4, 4) / 1e6));
                 sb.Append(String.Format("Mk5: {0:F0} K {1:F3} MW\n", PluginHelper.RadiatorTemperatureMk5, stefan_area * Math.Pow(PluginHelper.RadiatorTemperatureMk5, 4) / 1e6));
 
-                var convection = 900 * effectiveRadiatorArea * 1000 / 1e6 * convectiveBonus;
+                var convection = 900 * EffectiveRadiatorArea * 1000 / 1e6 * convectiveBonus;
                 var disapation = stefan_area * Math.Pow(900, 4) / 1e6;
 
                 sb.Append(String.Format("\nMaximum @ 1 atmosphere : 1200 K, dissipation: {0:F3} MW\n, convection: {1:F3} MW\n", disapation, convection));

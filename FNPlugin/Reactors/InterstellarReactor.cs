@@ -1062,7 +1062,7 @@ namespace FNPlugin.Reactors
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_THERMALPOWER, 4));
             resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, 4));
             resourceBuffers.Init(this.part);
-            resourceBuffers.AddHighTimeWarpWasteHeatBuffer(wasteHeatMultiplier, 1.0e+5, true);
+            resourceBuffers.AddWasteHeatBuffer(wasteHeatMultiplier, 1.0e+5, true);
 
             windowID = new System.Random(part.GetInstanceID()).Next(int.MaxValue);
             base.OnStart(state);
@@ -1496,7 +1496,7 @@ namespace FNPlugin.Reactors
                 {
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
-                            .AddOutput(ResourceManager.FNRESOURCE_WASTEHEAT, ongoing_total_power_generated * TimeWarp.fixedDeltaTime)
+                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, ongoing_total_power_generated, true)
                             .Build());
                 }
 
@@ -1555,6 +1555,7 @@ namespace FNPlugin.Reactors
 
             resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_THERMALPOWER, 0);
             resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, 0);
+            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateBuffers();
         }
 
@@ -1626,6 +1627,7 @@ namespace FNPlugin.Reactors
         {
             resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_THERMALPOWER, MaximumThermalPower);
             resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, MaximumChargedPower);
+            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateBuffers();
         }
 

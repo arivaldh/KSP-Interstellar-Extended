@@ -62,6 +62,7 @@
     <Compile Include="ResourceManagement\ConversionProcess.cs" />
     <Compile Include="ResourceManagement\SyncResourceOvermanager.cs" />
     <Compile Include="ResourceManagement\SyncVesselResourceManager.cs" />
+    <Compile Include="ResourceManagement\SnapshotFactory.cs" />
     <Compile Include="RDColoredUpgradeIcon.cs" />
     <Compile Include="ResourceManagement\ResourceBuffers.cs" />
     <Compile Include="Resources\AtmosphericFloatCurves.cs" />
