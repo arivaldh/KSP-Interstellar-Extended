@@ -229,7 +229,10 @@ namespace FNPlugin
         const int RADIATOR_DELAY = 20;
         const int FRAME_DELAY = 9;
         const int DEPLOYMENT_DELAY = 6;
-        
+
+        private double externalTemperature;
+        private double atmosphereModifierAtmosphere;
+        private double atmosphereModifierVacuum;
         private double radiatedThermalPower;
         private double convectedThermalPower;
         private bool active;
@@ -325,7 +328,7 @@ namespace FNPlugin
             if (PluginHelper.UpgradeAvailable(PluginHelper.RadiatorUpgradeTech1))
                 nrAvailableUpgradeTechs++;
 
-            // determine fusion tech levels
+            // determine radiator tech levels
             if (nrAvailableUpgradeTechs == 5)
                 CurrentGenerationType = GenerationType.Mk5;
             else if (nrAvailableUpgradeTechs == 4)
@@ -731,7 +734,34 @@ namespace FNPlugin
                 else
                     explode_counter = 0;
 
+                externalTemperature = FlightGlobals.getExternalTemperature(vessel.transform.position);
+                atmosphereModifierAtmosphere = Math.Max(Math.Min(vessel.atmDensity, 1), 0);
+                atmosphereModifierVacuum = 1 - atmosphereModifierAtmosphere;
+                maxCurrentTemperature = maxAtmosphereTemperature * atmosphereModifierAtmosphere + maxVacuumTemperature * atmosphereModifierVacuum;
+
                 SyncVesselResourceManager.RegisterRadiator(this);
+                if (!Double.IsNaN(wasteheatRatio))
+                {
+                    if (radiatorIsEnabled)
+                    {
+                        if (_moduleDeployableRadiator)
+                            _moduleDeployableRadiator.hasPivot = pivotEnabled;
+                    }
+
+                    if (vessel.atmDensity > 0)
+                    {
+                        if (update_count == DEPLOYMENT_DELAY)
+                            DeployControl(dynamic_pressure);
+                    }
+                    else
+                    {
+                        if (!radiatorIsEnabled && isAutomated && canRadiateHeat && showControls && update_count == DEPLOYMENT_DELAY)
+                        {
+                            Debug.Log("[KSPI] - FixedUpdate Automated Deployment ");
+                            Deploy();
+                        }
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -741,11 +771,9 @@ namespace FNPlugin
 
         public double GetConsumedWasteHeatPerSecond()
         {
-            effectiveRadiatorArea = EffectiveRadiatorArea;
-
-            var external_temperature = FlightGlobals.getExternalTemperature(part.transform.position);
-
             wasteheatRatio = getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
+
+            effectiveRadiatorArea = EffectiveRadiatorArea;
 
             if (Double.IsNaN(wasteheatRatio))
             {
@@ -753,14 +781,10 @@ namespace FNPlugin
                 return 0.0d;
             }
 
-            var normalized_atmosphere = Math.Min(vessel.atmDensity, 1);
-
-            maxCurrentTemperature = maxAtmosphereTemperature * Math.Max(normalized_atmosphere, 0) + maxVacuumTemperature * Math.Max(Math.Min(1 - vessel.atmDensity, 1), 0);
-
-            radiator_temperature_temp_val = external_temperature + Math.Min((maxRadiatorTemperature - external_temperature) * Math.Sqrt(wasteheatRatio), maxCurrentTemperature - external_temperature);
+            radiator_temperature_temp_val = externalTemperature + Math.Min((maxRadiatorTemperature - externalTemperature) * Math.Sqrt(wasteheatRatio), maxCurrentTemperature - externalTemperature);
 
             var efficiency = 1 - Math.Pow(1 - wasteheatRatio, 400);
-            var delta_temp = Math.Max(radiator_temperature_temp_val - Math.Max(external_temperature * normalized_atmosphere, 2.7), 0);
+            var delta_temp = Math.Max(radiator_temperature_temp_val - Math.Max(externalTemperature * atmosphereModifierAtmosphere, 2.7), 0);
 
             if (radiatorIsEnabled)
             {
@@ -780,13 +804,10 @@ namespace FNPlugin
                     Debug.LogError("FNRadiator: FixedUpdate NaN detected in instantaneous_rad_temp after reading external temperature");
 
                 CurrentRadiatorTemperature = instantaneous_rad_temp;
-
-                if (_moduleDeployableRadiator)
-                    _moduleDeployableRadiator.hasPivot = pivotEnabled;
             }
             else
             {
-                double thermal_power_dissip_per_second = efficiency * Math.Pow(Math.Max(delta_temp - external_temperature, 0), 4) * GameConstants.stefan_const * effectiveRadiatorArea / 0.5e7;
+                double thermal_power_dissip_per_second = efficiency * Math.Pow(Math.Max(delta_temp - externalTemperature, 0), 4) * GameConstants.stefan_const * effectiveRadiatorArea / 0.5e7;
 
                 radiatedThermalPower = (canRadiateHeat ? thermal_power_dissip_per_second : 0.0d);
 
@@ -805,7 +826,7 @@ namespace FNPlugin
                 pressure += dynamic_pressure;
 
                 var splashBonus = Math.Max(part.submergedPortion * 10, 1);
-                var convection_delta_temp = Math.Max(0, CurrentRadiatorTemperature - external_temperature);
+                var convection_delta_temp = Math.Max(0, CurrentRadiatorTemperature - externalTemperature);
                 var conv_power_dissip = efficiency * pressure * convection_delta_temp * effectiveRadiatorArea * 0.001 * convectiveBonus * splashBonus;
 
                 if (!radiatorIsEnabled)
@@ -815,24 +836,15 @@ namespace FNPlugin
 
                 if (Double.IsNaN(convectedThermalPower))
                     Debug.LogError("FNRadiator: FixedUpdate NaN detected in convectedThermalPower");
-
-                if (update_count == DEPLOYMENT_DELAY)
-                    DeployMentControl(dynamic_pressure);
             }
             else
             {
                 convectedThermalPower = 0.0d;
-
-                if (!radiatorIsEnabled && isAutomated && canRadiateHeat && showControls && update_count == DEPLOYMENT_DELAY)
-                {
-                    Debug.Log("[KSPI] - FixedUpdate Automated Deployment ");
-                    Deploy();
-                }
             }
             return radiatedThermalPower + convectedThermalPower;
         }
 
-        private void DeployMentControl(double dynamic_pressure)
+        private void DeployControl(double dynamic_pressure)
         {
             if (dynamic_pressure > 0 && (atmosphereToleranceModifier * dynamic_pressure / 1.4854428818159e-3 * 100) > 100)
             {
