@@ -1,33 +1,36 @@
+﻿using System.Linq;
+using System.Text;
 using FNPlugin.Extensions;
 using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using KSP.Localization;
 
 namespace FNPlugin
 {
-    [KSPModule("Fusion Engine")]
+    [KSPModule("Confinement Fusion Engine")]
     class FusionEngineController : DaedalusEngineController { }
 
-    [KSPModule("Inertial Confinement Fusion Engine")]
+    [KSPModule("Confinement Fusion Engine")]
     class DaedalusEngineController : ResourceSuppliableModule, IUpgradeableModule 
     {
         // Persistant
         [KSPField(isPersistant = true)]
         public bool IsEnabled;
-        [KSPField(isPersistant = true)]
-        public bool isupgraded;
+        //[KSPField(isPersistant = true)]
+        //public bool isupgraded;
         [KSPField(isPersistant = true)]
         public bool rad_safety_features = true;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_KSPIE_FusionEngine_speedLimit", guiUnits = "c"), UI_FloatRange(stepIncrement = 1 / 3f, maxValue = 1, minValue = 1 / 3f)]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_KSPIE_FusionEngine_speedLimit", guiUnits = "c"), UI_FloatRange(stepIncrement = 0.005f, maxValue = 1, minValue = 0.005f)]
         public float speedLimit = 1;
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_KSPIE_FusionEngine_fuelLimit", guiUnits = "%"), UI_FloatRange(stepIncrement = 0.5f, maxValue = 100, minValue = 0.5f)]
         public float fuelLimit = 100;
         [KSPField(isPersistant = true, guiActiveEditor = false, guiActive = true, guiName = "#LOC_KSPIE_FusionEngine_maximizeThrust"), UI_Toggle(disabledText = "Off", enabledText = "On")]
         public bool maximizeThrust = true;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "#LOC_KSPIE_FusionEngine_powerUsage")]
+        [KSPField(guiActive = true, guiName = "#LOC_KSPIE_FusionEngine_powerUsage")]
         public string powerUsage;
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "#LOC_KSPIE_FusionEngine_fusionFuel")]
         public string fusionFuel = "FusionPellets";
@@ -69,51 +72,156 @@ namespace FNPlugin
 
         [KSPField]
         public double universalTime;
-        [KSPField]
-        public float powerRequirement = 2500;
+
+        [KSPField(guiActiveEditor = true, guiName = "<size=10>Upgrade Tech</size>")]
+        public string translatedTechMk1;
+        [KSPField(guiActiveEditor = true, guiName = "<size=10>Upgrade Tech</size>")]
+        public string translatedTechMk2;
+        [KSPField(guiActiveEditor = true, guiName = "<size=10>Upgrade Tech</size>")]
+        public string translatedTechMk3;
+        [KSPField(guiActiveEditor = true, guiName = "<size=10>Upgrade Tech</size>")]
+        public string translatedTechMk4;
+        [KSPField(guiActiveEditor = true, guiName = "<size=10>Upgrade Tech</size>")]
+        public string translatedTechMk5;
+        [KSPField(guiActiveEditor = true, guiName = "<size=10>Upgrade Tech</size>")]
+        public string translatedTechMk6;
+        [KSPField(guiActiveEditor = true, guiName = "<size=10>Upgrade Tech</size>")]
+        public string translatedTechMk7;
+        [KSPField(guiActiveEditor = true, guiName = "<size=10>Upgrade Tech</size>")]
+        public string translatedTechMk8;
 
         [KSPField]
-        public float maxThrust = 0;
-        [KSPField]
-        public float maxThrustUpgraded = 1200;
-
-        [KSPField(guiActiveEditor = true)]
         public float maxThrustMk1 = 300;
-        [KSPField(guiActiveEditor = true)]
+        [KSPField]
         public float maxThrustMk2 = 500;
-        [KSPField(guiActiveEditor = true)]
+        [KSPField]
         public float maxThrustMk3 = 800;
-        [KSPField(guiActiveEditor = true)]
+        [KSPField]
         public float maxThrustMk4 = 1200;
-        [KSPField(guiActiveEditor = true)]
+        [KSPField]
         public float maxThrustMk5 = 1500;
-        [KSPField(guiActiveEditor = true)]
+        [KSPField]
         public float maxThrustMk6 = 2000;
-        [KSPField(guiActiveEditor = true)]
+        [KSPField]
         public float maxThrustMk7 = 2500;
-        [KSPField(guiActiveEditor = true)]
+        [KSPField]
         public float maxThrustMk8 = 3000;
+        [KSPField]
+        public float maxThrustMk9 = 3500;
 
+        [KSPField(guiActiveEditor = true, guiName = "Thust/Isp Mk1")]
+        public string guiThrustMk1;
+        [KSPField(guiActiveEditor = true, guiName = "Thust/Isp Mk2")]
+        public string guiThrustMk2;
+        [KSPField(guiActiveEditor = true, guiName = "Thust/Isp Mk3")]
+        public string guiThrustMk3;
+        [KSPField(guiActiveEditor = true, guiName = "Thust/Isp Mk4")]
+        public string guiThrustMk4;
+        [KSPField(guiActiveEditor = true, guiName = "Thust/Isp Mk5")]
+        public string guiThrustMk5;
+        [KSPField(guiActiveEditor = true, guiName = "Thust/Isp Mk6")]
+        public string guiThrustMk6;
+        [KSPField(guiActiveEditor = true, guiName = "Thust/Isp Mk7")]
+        public string guiThrustMk7;
+        [KSPField(guiActiveEditor = true, guiName = "Thust/Isp Mk8")]
+        public string guiThrustMk8;
+        [KSPField(guiActiveEditor = true, guiName = "Thust/Isp Mk9")]
+        public string guiThrustMk9;
+
+        [KSPField(guiActiveEditor = true, guiName = "Power/Waste Mk1")]
+        public string guiPowerMk1;
+        [KSPField(guiActiveEditor = true, guiName = "Power/Waste Mk2")]
+        public string guiPowerMk2;
+        [KSPField(guiActiveEditor = true, guiName = "Power/Waste Mk3")]
+        public string guiPowerMk3;
+        [KSPField(guiActiveEditor = true, guiName = "Power/Waste Mk4")]
+        public string guiPowerMk4;
+        [KSPField(guiActiveEditor = true, guiName = "Power/Waste Mk5")]
+        public string guiPowerMk5;
+        [KSPField(guiActiveEditor = true, guiName = "Power/Waste Mk6")]
+        public string guiPowerMk6;
+        [KSPField(guiActiveEditor = true, guiName = "Power/Waste Mk7")]
+        public string guiPowerMk7;
+        [KSPField(guiActiveEditor = true, guiName = "Power/Waste Mk8")]
+        public string guiPowerMk8;
+        [KSPField(guiActiveEditor = true, guiName = "Power/Waste Mk9")]
+        public string guiPowerMk9;
+
+        [KSPField]
+        public float wasteheatMk1 = 2500;
+        [KSPField]
+        public float wasteheatMk2 = 2500;
+        [KSPField]
+        public float wasteheatMk3 = 2500;
+        [KSPField]
+        public float wasteheatMk4 = 2500;
+        [KSPField]
+        public float wasteheatMk5 = 2500;
+        [KSPField]
+        public float wasteheatMk6 = 2500;
+        [KSPField]
+        public float wasteheatMk7 = 2500;
+        [KSPField]
+        public float wasteheatMk8 = 2500;
+        [KSPField]
+        public float wasteheatMk9 = 2500;
+
+        [KSPField]
+        public double powerRequirementMk1 = 4304;
+        [KSPField]
+        public double powerRequirementMk2 = 4783;
+        [KSPField]
+        public double powerRequirementMk3 = 5314;
+        [KSPField]
+        public double powerRequirementMk4 = 5905;
+        [KSPField]
+        public double powerRequirementMk5 = 6561;
+        [KSPField]
+        public double powerRequirementMk6 = 7290;
+        [KSPField]
+        public double powerRequirementMk7 = 8100;
+        [KSPField]
+        public double powerRequirementMk8 = 9000;
+        [KSPField]
+        public double powerRequirementMk9 = 10000;
+
+        [KSPField]
+        public double thrustIspMk1 = 83886;
+        [KSPField]
+        public double thrustIspMk2 = 104857;
+        [KSPField]
+        public double thrustIspMk3 = 131072;
+        [KSPField]
+        public double thrustIspMk4 = 163840;
+        [KSPField]
+        public double thrustIspMk5 = 204800;
+        [KSPField]
+        public double thrustIspMk6 = 256000;
+        [KSPField]
+        public double thrustIspMk7 = 320000;
+        [KSPField]
+        public double thrustIspMk8 = 400000;
+        [KSPField]
+        public double thrustIspMk9 = 500000;
+
+        [KSPField(guiActive = true, guiName = "Available Upgrade Techs")]
+        public int numberOfAvailableUpgradeTechs;
         [KSPField]
         public float maxAtmosphereDensity = 0;
-        [KSPField]
-        public double efficiency = 0.25;
-        [KSPField]
-        public double efficiencyUpgraded = 0.5;
         [KSPField]
         public float leathalDistance = 2000;
         [KSPField]
         public float killDivider = 50;
-        [KSPField]
-        public float fusionWasteHeat = 2500;
-        [KSPField]
-        public float fusionWasteHeatUpgraded = 10000;
         [KSPField]
         public float wasteHeatMultiplier = 1;
         [KSPField]
         public float powerRequirementMultiplier = 1;
         [KSPField]
         public float maxTemp = 3200;
+        [KSPField]
+        public double powerThrottleExponent = 0.5;
+        [KSPField]
+        public double ispThrottleExponent = 0.5;
         [KSPField]
         public int powerPriority = 4;
         [KSPField]
@@ -123,31 +231,26 @@ namespace FNPlugin
         [KSPField]
         public string upgradedName = "Deadalus IC Fusion Engine";
 
-        // Gui
-        [KSPField(guiActiveEditor = true, guiName= "upgrade tech")]
-        public string upgradeTechReq = null;
+        [KSPField]
+        public string upgradeTechReq1 = null;
+        [KSPField]
+        public string upgradeTechReq2 = null;
+        [KSPField]
+        public string upgradeTechReq3 = null;
+        [KSPField]
+        public string upgradeTechReq4 = null;
+        [KSPField]
+        public string upgradeTechReq5 = null;
+        [KSPField]
+        public string upgradeTechReq6 = null;
+        [KSPField]
+        public string upgradeTechReq7 = null;
+        [KSPField]
+        public string upgradeTechReq8 = null;
 
-        [KSPField(guiActiveEditor = true, guiName = "upgrade tech 1")]
-        public string upgradeTechReq1;
-        [KSPField(guiActiveEditor = true, guiName = "upgrade tech 2")]
-        public string upgradeTechReq2;
-        [KSPField(guiActiveEditor = true, guiName = "upgrade tech 3")]
-        public string upgradeTechReq3;
-        [KSPField(guiActiveEditor = true, guiName = "upgrade tech 4")]
-        public string upgradeTechReq4;
-        [KSPField(guiActiveEditor = true, guiName = "upgrade tech 5")]
-        public string upgradeTechReq5;
-        [KSPField(guiActiveEditor = true, guiName = "upgrade tech 6")]
-        public string upgradeTechReq6;
-        [KSPField(guiActiveEditor = true, guiName = "upgrade tech 7")]
-        public string upgradeTechReq7;
-        [KSPField(guiActiveEditor = true, guiName = "upgrade tech 8")]
-        public string upgradeTechReq8;
-
-        bool hasrequiredupgrade;
         bool radhazard;
         bool warpToReal;
-        float engineIsp;
+        double engineIsp;
         double percentageFuelRemaining;
 
         Stopwatch stopWatch;
@@ -157,6 +260,8 @@ namespace FNPlugin
         BaseEvent retrofitEngineEvent;
         BaseField radhazardstrField;
         PartResourceDefinition fusionFuelResourceDefinition;
+
+        const string LIGHTBLUE = "#7fdfffff";
 
         private int _engineGenerationType;
         public GenerationType EngineGenerationType
@@ -177,20 +282,9 @@ namespace FNPlugin
             rad_safety_features = true;
         }
 
-        [KSPEvent(guiActive = true, guiName = "Retrofit", active = true)]
-        public void RetrofitEngine()
-        {
-            if (ResearchAndDevelopment.Instance == null || isupgraded || ResearchAndDevelopment.Instance.Science < upgradeCost) return;
-
-            upgradePartModule();
-            ResearchAndDevelopment.Instance.AddScience(-upgradeCost, TransactionReasons.RnDPartPurchase);
-        }
-
         #region IUpgradeableModule
 
-        public String UpgradeTechnology { get { return upgradeTechReq; } }
-
-        private double Efficiency { get { return isupgraded ? efficiencyUpgraded : efficiency; } }
+        public String UpgradeTechnology { get { return upgradeTechReq1; } }
 
         private float MaximumThrust
         {
@@ -199,45 +293,121 @@ namespace FNPlugin
                 switch (_engineGenerationType)
                 {
                     case (int)GenerationType.Mk1:
-                        return maxThrustMk1 + maxThrust;
-                        break;
+                        return maxThrustMk1;
                     case (int)GenerationType.Mk2:
-                        return maxThrustMk2 + maxThrustUpgraded;
-                        break;
+                        return maxThrustMk2;
                     case (int)GenerationType.Mk3:
                         return maxThrustMk3;
-                        break;
                     case (int)GenerationType.Mk4:
                         return maxThrustMk4;
-                        break;
                     case (int)GenerationType.Mk5:
                         return maxThrustMk5;
-                        break;
                     case (int)GenerationType.Mk6:
                         return maxThrustMk6;
-                        break;
                     case (int)GenerationType.Mk7:
                         return maxThrustMk7;
-                        break;
-                    default:
+                    case (int)GenerationType.Mk8:
                         return maxThrustMk8;
-                        break;
+                    default:
+                        return maxThrustMk9;
                 }
             }
         }
-        private float FusionWasteHeat { get { return isupgraded ? fusionWasteHeatUpgraded : fusionWasteHeat; } }
+        private float FusionWasteHeat
+        {
+            get
+            {
+                switch (_engineGenerationType)
+                {
+                    case (int)GenerationType.Mk1:
+                        return wasteheatMk1;
+                    case (int)GenerationType.Mk2:
+                        return wasteheatMk2;
+                    case (int)GenerationType.Mk3:
+                        return wasteheatMk3;
+                    case (int)GenerationType.Mk4:
+                        return wasteheatMk4;
+                    case (int)GenerationType.Mk5:
+                        return wasteheatMk5;
+                    case (int)GenerationType.Mk6:
+                        return wasteheatMk6;
+                    case (int)GenerationType.Mk7:
+                        return wasteheatMk7;
+                    case (int)GenerationType.Mk8:
+                        return wasteheatMk8;
+                    default:
+                        return maxThrustMk9;
+                }
+            }
+        }
+
+        public double PowerRequirement
+        {
+            get
+            {
+                switch (_engineGenerationType)
+                {
+                    case (int)GenerationType.Mk1:
+                        return powerRequirementMk1;
+                    case (int)GenerationType.Mk2:
+                        return powerRequirementMk2;
+                    case (int)GenerationType.Mk3:
+                        return powerRequirementMk3;
+                    case (int)GenerationType.Mk4:
+                        return powerRequirementMk4;
+                    case (int)GenerationType.Mk5:
+                        return powerRequirementMk5;
+                    case (int)GenerationType.Mk6:
+                        return powerRequirementMk6;
+                    case (int)GenerationType.Mk7:
+                        return powerRequirementMk7;
+                    case (int)GenerationType.Mk8:
+                        return powerRequirementMk8;
+                    default:
+                        return powerRequirementMk9;
+                }
+            }
+        }
+
+        public double EngineIsp
+        {
+            get
+            {
+                switch (_engineGenerationType)
+                {
+                    case (int)GenerationType.Mk1:
+                        return thrustIspMk1;
+                    case (int)GenerationType.Mk2:
+                        return thrustIspMk2;
+                    case (int)GenerationType.Mk3:
+                        return thrustIspMk3;
+                    case (int)GenerationType.Mk4:
+                        return thrustIspMk4;
+                    case (int)GenerationType.Mk5:
+                        return thrustIspMk5;
+                    case (int)GenerationType.Mk6:
+                        return thrustIspMk6;
+                    case (int)GenerationType.Mk7:
+                        return thrustIspMk7;
+                    case (int)GenerationType.Mk8:
+                        return thrustIspMk8;
+                    default:
+                        return thrustIspMk9;
+                }
+            }
+        }
 
         private double EffectivePowerRequirement
         {
             get
             {
-                return powerRequirement * powerRequirementMultiplier;
+                return PowerRequirement * powerRequirementMultiplier;
             }
         }
 
         public void upgradePartModule()
         {
-            isupgraded = true;
+            //isupgraded = true;
         }
 
         #endregion
@@ -258,21 +428,23 @@ namespace FNPlugin
 
                 if (curEngineT == null) return;
 
-                engineIsp = curEngineT.atmosphereCurve.Evaluate(0);
+                //engineIsp = curEngineT.atmosphereCurve.Evaluate(0);
 
-                // if we can upgrade, let's do so
-                if (isupgraded)
-                    upgradePartModule();
-                else if (this.HasTechsRequiredToUpgrade())
-                    hasrequiredupgrade = true;
+                //// if we can upgrade, let's do so
+                //if (isupgraded)
+                //    upgradePartModule();
+                //else if (this.HasTechsRequiredToUpgrade())
+                //    hasrequiredupgrade = true;
 
-                if (state == StartState.Editor && this.HasTechsRequiredToUpgrade())
-                {
-                    isupgraded = true;
-                    upgradePartModule();
-                }
+                //if (state == StartState.Editor && this.HasTechsRequiredToUpgrade())
+                //{
+                //    isupgraded = true;
+                //    upgradePartModule();
+                //}
 
                 DetermineTechLevel();
+
+                engineIsp = EngineIsp;
 
                 // bind with fields and events
                 deactivateRadSafetyEvent = Events["DeactivateRadSafety"];
@@ -280,14 +452,23 @@ namespace FNPlugin
                 retrofitEngineEvent = Events["RetrofitEngine"];
                 radhazardstrField = Fields["radhazardstr"];
 
-                Fields["upgradeTechReq1"].guiActiveEditor = !String.IsNullOrEmpty(upgradeTechReq1);
-                Fields["upgradeTechReq2"].guiActiveEditor = !String.IsNullOrEmpty(upgradeTechReq2);
-                Fields["upgradeTechReq3"].guiActiveEditor = !String.IsNullOrEmpty(upgradeTechReq3);
-                Fields["upgradeTechReq4"].guiActiveEditor = !String.IsNullOrEmpty(upgradeTechReq4);
-                Fields["upgradeTechReq5"].guiActiveEditor = !String.IsNullOrEmpty(upgradeTechReq5);
-                Fields["upgradeTechReq6"].guiActiveEditor = !String.IsNullOrEmpty(upgradeTechReq6);
-                Fields["upgradeTechReq7"].guiActiveEditor = !String.IsNullOrEmpty(upgradeTechReq7);
-                Fields["upgradeTechReq8"].guiActiveEditor = !String.IsNullOrEmpty(upgradeTechReq8);
+                translatedTechMk1 = DisplayTech(upgradeTechReq1);
+                translatedTechMk2 = DisplayTech(upgradeTechReq2);
+                translatedTechMk3 = DisplayTech(upgradeTechReq3);
+                translatedTechMk4 = DisplayTech(upgradeTechReq4);
+                translatedTechMk5 = DisplayTech(upgradeTechReq5);
+                translatedTechMk6 = DisplayTech(upgradeTechReq6);
+                translatedTechMk7 = DisplayTech(upgradeTechReq7);
+                translatedTechMk8 = DisplayTech(upgradeTechReq8);
+
+                Fields["translatedTechMk1"].guiActiveEditor = !String.IsNullOrEmpty(translatedTechMk1);
+                Fields["translatedTechMk2"].guiActiveEditor = !String.IsNullOrEmpty(translatedTechMk2);
+                Fields["translatedTechMk3"].guiActiveEditor = !String.IsNullOrEmpty(translatedTechMk3);
+                Fields["translatedTechMk4"].guiActiveEditor = !String.IsNullOrEmpty(translatedTechMk4);
+                Fields["translatedTechMk5"].guiActiveEditor = !String.IsNullOrEmpty(translatedTechMk5);
+                Fields["translatedTechMk6"].guiActiveEditor = !String.IsNullOrEmpty(translatedTechMk6);
+                Fields["translatedTechMk7"].guiActiveEditor = !String.IsNullOrEmpty(translatedTechMk7);
+                Fields["translatedTechMk8"].guiActiveEditor = !String.IsNullOrEmpty(translatedTechMk8);
             }
             catch (Exception e)
             {
@@ -295,27 +476,40 @@ namespace FNPlugin
             }
         }
 
+        private string DisplayTech(string techid)
+        {
+            if (String.IsNullOrEmpty(techid))
+                return string.Empty;
+
+            var translatedTech = Localizer.Format(PluginHelper.GetTechTitleById(techid));
+
+            if (PluginHelper.UpgradeAvailable(techid))
+                return "<size=10><color=green>Ѵ</color> " + translatedTech + "</size>";
+            else
+                return "<size=10><color=red>X</color> " + translatedTech + "</size>";
+        }
+
         private void DetermineTechLevel()
         {
-            var numberOfUpgradeTechs = 0;
+            numberOfAvailableUpgradeTechs = 0;
             if (PluginHelper.UpgradeAvailable(upgradeTechReq1))
-                numberOfUpgradeTechs++;
+                numberOfAvailableUpgradeTechs++;
             if (PluginHelper.UpgradeAvailable(upgradeTechReq2))
-                numberOfUpgradeTechs++;
+                numberOfAvailableUpgradeTechs++;
             if (PluginHelper.UpgradeAvailable(upgradeTechReq3))
-                numberOfUpgradeTechs++;
+                numberOfAvailableUpgradeTechs++;
             if (PluginHelper.UpgradeAvailable(upgradeTechReq4))
-                numberOfUpgradeTechs++;
+                numberOfAvailableUpgradeTechs++;
             if (PluginHelper.UpgradeAvailable(upgradeTechReq5))
-                numberOfUpgradeTechs++;
+                numberOfAvailableUpgradeTechs++;
             if (PluginHelper.UpgradeAvailable(upgradeTechReq6))
-                numberOfUpgradeTechs++;
+                numberOfAvailableUpgradeTechs++;
             if (PluginHelper.UpgradeAvailable(upgradeTechReq7))
-                numberOfUpgradeTechs++;
+                numberOfAvailableUpgradeTechs++;
             if (PluginHelper.UpgradeAvailable(upgradeTechReq8))
-                numberOfUpgradeTechs++;
+                numberOfAvailableUpgradeTechs++;
 
-            EngineGenerationType = (GenerationType) numberOfUpgradeTechs;
+            EngineGenerationType = (GenerationType) numberOfAvailableUpgradeTechs;
         }
 
         public void Update()
@@ -324,7 +518,15 @@ namespace FNPlugin
             {
                 if (HighLogic.LoadedSceneIsEditor)
                 {
-                    powerUsage = (EffectivePowerRequirement / 1000d).ToString("0.000") + " GW";
+                    UpdateThrustGui();
+
+                    // configure engine for Kerbal Engeneer support
+                    UpdateAtmosphericCurve(EngineIsp);
+                    effectiveMaxThrustInKiloNewton = MaximumThrust;
+                    calculatedFuelflow = effectiveMaxThrustInKiloNewton / EngineIsp / PluginHelper.GravityConstant;
+                    curEngineT.maxFuelFlow = (float)calculatedFuelflow;
+                    curEngineT.maxThrust = (float)effectiveMaxThrustInKiloNewton;
+
                     return;
                 }
 
@@ -341,29 +543,96 @@ namespace FNPlugin
             }
         }
 
-        public override void OnUpdate() 
+        private void UpdateThrustGui()
         {
+            guiThrustMk1 = FormatThrustStatistics(maxThrustMk1, thrustIspMk1, EngineGenerationType == GenerationType.Mk1 ? LIGHTBLUE : null);
+            guiThrustMk2 = FormatThrustStatistics(maxThrustMk2, thrustIspMk2, EngineGenerationType == GenerationType.Mk2 ? LIGHTBLUE : null);
+            guiThrustMk3 = FormatThrustStatistics(maxThrustMk3, thrustIspMk3, EngineGenerationType == GenerationType.Mk3 ? LIGHTBLUE : null);
+            guiThrustMk4 = FormatThrustStatistics(maxThrustMk4, thrustIspMk4, EngineGenerationType == GenerationType.Mk4 ? LIGHTBLUE : null);
+            guiThrustMk5 = FormatThrustStatistics(maxThrustMk5, thrustIspMk5, EngineGenerationType == GenerationType.Mk5 ? LIGHTBLUE : null);
+            guiThrustMk6 = FormatThrustStatistics(maxThrustMk6, thrustIspMk6, EngineGenerationType == GenerationType.Mk6 ? LIGHTBLUE : null);
+            guiThrustMk7 = FormatThrustStatistics(maxThrustMk7, thrustIspMk7, EngineGenerationType == GenerationType.Mk7 ? LIGHTBLUE : null);
+            guiThrustMk8 = FormatThrustStatistics(maxThrustMk8, thrustIspMk8, EngineGenerationType == GenerationType.Mk8 ? LIGHTBLUE : null);
+            guiThrustMk9 = FormatThrustStatistics(maxThrustMk9, thrustIspMk9, EngineGenerationType == GenerationType.Mk9 ? LIGHTBLUE : null);
+
+            guiPowerMk1 = FormatPowerStatistics(powerRequirementMk1, wasteheatMk1, EngineGenerationType == GenerationType.Mk1 ? LIGHTBLUE : null);
+            guiPowerMk2 = FormatPowerStatistics(powerRequirementMk2, wasteheatMk2, EngineGenerationType == GenerationType.Mk2 ? LIGHTBLUE : null);
+            guiPowerMk3 = FormatPowerStatistics(powerRequirementMk3, wasteheatMk3, EngineGenerationType == GenerationType.Mk3 ? LIGHTBLUE : null);
+            guiPowerMk4 = FormatPowerStatistics(powerRequirementMk4, wasteheatMk4, EngineGenerationType == GenerationType.Mk4 ? LIGHTBLUE : null);
+            guiPowerMk5 = FormatPowerStatistics(powerRequirementMk5, wasteheatMk5, EngineGenerationType == GenerationType.Mk5 ? LIGHTBLUE : null);
+            guiPowerMk6 = FormatPowerStatistics(powerRequirementMk6, wasteheatMk6, EngineGenerationType == GenerationType.Mk6 ? LIGHTBLUE : null);
+            guiPowerMk7 = FormatPowerStatistics(powerRequirementMk7, wasteheatMk7, EngineGenerationType == GenerationType.Mk7 ? LIGHTBLUE : null);
+            guiPowerMk8 = FormatPowerStatistics(powerRequirementMk8, wasteheatMk8, EngineGenerationType == GenerationType.Mk8 ? LIGHTBLUE : null);
+            guiPowerMk9 = FormatPowerStatistics(powerRequirementMk9, wasteheatMk9, EngineGenerationType == GenerationType.Mk9 ? LIGHTBLUE : null);
+        }
+
+        private string FormatThrustStatistics(double value, double isp, string color = null, string format = "F0")
+        {
+            var result = value.ToString(format) + " kN @ " + isp.ToString(format) + "s";
+
+            if (String.IsNullOrEmpty(color))
+                return result;
+
+            return "<color=" + color + ">" + result + "</color>";
+        }
+
+        private string FormatPowerStatistics(double powerRequirement, double wasteheat, string color = null, string format = "F0")
+        {
+            var result = (powerRequirement * powerRequirementMultiplier).ToString(format) + " MWe / " + wasteheat.ToString(format) + " MJ";
+
+            if (String.IsNullOrEmpty(color))
+                return result;
+
+            return "<color=" + color + ">" + result + "</color>";
+        }
+
+        //
+        public override void OnUpdate()
+        {
+
+            if (curEngineT == null) return;
+
             try
             {
-                if (curEngineT == null) return;
-
                 // When transitioning from timewarp to real update throttle
                 if (warpToReal)
                 {
                     vessel.ctrlState.mainThrottle = storedThrotle;
                     warpToReal = false;
                 }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogError("[KSPI] - Error OnUpdate warpToReal: " + e.Message);
+            }
 
+            try
+            {
                 deactivateRadSafetyEvent.active = rad_safety_features;
                 activateRadSafetyEvent.active = !rad_safety_features;
-                retrofitEngineEvent.active = !isupgraded && ResearchAndDevelopment.Instance.Science >= upgradeCost && hasrequiredupgrade;
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogError("[KSPI] - Error OnUpdate Events: " + e.Message);
+            }
+
+            try
+            {
 
                 if (curEngineT.isOperational && !IsEnabled)
                 {
                     IsEnabled = true;
                     part.force_activate();
                 }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogError("[KSPI] - Error OnUpdate force_activate: " + e.Message);
+            }
 
+
+            try
+            {
                 var kerbalHazardCount = 0;
                 foreach (var vess in FlightGlobals.Vessels)
                 {
@@ -391,7 +660,7 @@ namespace FNPlugin
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogError("[KSPI] - Error OnUpdate " + e.Message + " stack " + e.StackTrace);
+                UnityEngine.Debug.LogError("[KSPI] - Error OnUpdate kerbalHazardCount " + e.Message);
             }
         }
 
@@ -501,12 +770,19 @@ namespace FNPlugin
                     if (part.vessel.geeForce <= 2)
                         part.vessel.IgnoreGForces(1);
 
+                    var thrustPercentage = (double)(decimal)curEngineT.thrustPercentage;
+                    var thrustRatio = Math.Max(thrustPercentage * 0.01, 0.01);
+                    var scaledThrottle = Math.Pow(thrustRatio * throttle, ispThrottleExponent);
+                    effectiveIsp = timeDilation * engineIsp * scaledThrottle;
+
+                    UpdateAtmosphericCurve(effectiveIsp);
+
                     fusionRatio = ProcessPowerAndWasteHeat(throttle);
 
                     // Update FuelFlow
                     effectiveMaxThrustInKiloNewton = timeDilation * timeDilation * MaximumThrust * fusionRatio;
                     calculatedFuelflow = effectiveMaxThrustInKiloNewton / effectiveIsp / PluginHelper.GravityConstant;
-                    massFlowRateKgPerSecond = curEngineT.currentThrottle * calculatedFuelflow * 1000;
+                    massFlowRateKgPerSecond = thrustRatio * curEngineT.currentThrottle * calculatedFuelflow * 1000;
 
                     if (!curEngineT.getFlameoutState && fusionRatio < 0.01)
                     {
@@ -610,33 +886,28 @@ namespace FNPlugin
             // Calculate Fusion Ratio
             var effectivePowerRequirement = EffectivePowerRequirement;
             var thrustPercentage = (double)(decimal)curEngineT.thrustPercentage;
-            var requestedPower = (thrustPercentage * 0.01) * throtle * effectivePowerRequirement;
+            var thrustRatio = Math.Max(thrustPercentage * 0.01, 0.01);
+
+            var scaledThrottle = Math.Pow(thrustRatio * throtle, powerThrottleExponent);
+
+            var requestedPower = scaledThrottle * effectivePowerRequirement;
 
             var recievedPower = CheatOptions.InfiniteElectricity 
                 ? requestedPower
                 : consumeFNResourcePerSecond(requestedPower, ResourceManager.FNRESOURCE_MEGAJOULES);
 
             var plasmaRatio = effectivePowerRequirement > 0 ? recievedPower / requestedPower : 0;
-            var wasteheatFusionRatio = plasmaRatio >= 1 ? 1 : plasmaRatio > 0.01 ? plasmaRatio : 0;
 
-            powerUsage = (recievedPower / 1000d).ToString("0.000") + " GW / " + (effectivePowerRequirement * 0.001).ToString("0.000") + " GW";
+            powerUsage = (recievedPower * 0.001).ToString("0.000") + " GW / " + (requestedPower * 0.001).ToString("0.000") + " GW";
 
-            if (CheatOptions.IgnoreMaxTemperature) 
-                return wasteheatFusionRatio;
-
-            // Lasers produce Wasteheat
-            SyncVesselResourceManager.AddProcess(this, this,
-                ConversionProcess.Builder()
-                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, recievedPower * (1 - Efficiency), true)
+            // The Absorbed wasteheat from Fusion production and reaction
+            if (!CheatOptions.IgnoreMaxTemperature)
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, scaledThrottle * FusionWasteHeat * wasteHeatMultiplier * plasmaRatio, true)
                     .Build());
 
-            // The Aborbed wasteheat from Fusion
-            SyncVesselResourceManager.AddProcess(this, this,
-                ConversionProcess.Builder()
-                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, FusionWasteHeat * wasteHeatMultiplier * wasteheatFusionRatio, true)
-                    .Build());
-
-            return wasteheatFusionRatio;
+            return plasmaRatio;
         }
 
         private void KillKerbalsWithRadiation(float throttle)
@@ -689,6 +960,56 @@ namespace FNPlugin
         public override int getPowerPriority() 
         {
             return powerPriority;
+        }
+
+        public override string GetInfo()
+        {
+            DetermineTechLevel();
+
+            var sb = new StringBuilder();
+
+            if (!string.IsNullOrEmpty(upgradeTechReq1))
+            {
+                sb.AppendLine("<color=#7fdfffff>" + Localizer.Format("#LOC_KSPIE_Generic_upgradeTechnologies") + ":</color><size=10>");
+                if (!string.IsNullOrEmpty(upgradeTechReq1)) sb.AppendLine("- " + Localizer.Format(PluginHelper.GetTechTitleById(upgradeTechReq1)));
+                if (!string.IsNullOrEmpty(upgradeTechReq2)) sb.AppendLine("- " + Localizer.Format(PluginHelper.GetTechTitleById(upgradeTechReq2)));
+                if (!string.IsNullOrEmpty(upgradeTechReq3)) sb.AppendLine("- " + Localizer.Format(PluginHelper.GetTechTitleById(upgradeTechReq3)));
+                if (!string.IsNullOrEmpty(upgradeTechReq4)) sb.AppendLine("- " + Localizer.Format(PluginHelper.GetTechTitleById(upgradeTechReq4)));
+                if (!string.IsNullOrEmpty(upgradeTechReq5)) sb.AppendLine("- " + Localizer.Format(PluginHelper.GetTechTitleById(upgradeTechReq5)));
+                if (!string.IsNullOrEmpty(upgradeTechReq6)) sb.AppendLine("- " + Localizer.Format(PluginHelper.GetTechTitleById(upgradeTechReq6)));
+                if (!string.IsNullOrEmpty(upgradeTechReq7)) sb.AppendLine("- " + Localizer.Format(PluginHelper.GetTechTitleById(upgradeTechReq7)));
+                if (!string.IsNullOrEmpty(upgradeTechReq8)) sb.AppendLine("- " + Localizer.Format(PluginHelper.GetTechTitleById(upgradeTechReq8)));
+                sb.Append("</size>");
+                sb.AppendLine();
+            }
+
+            sb.AppendLine("<color=#7fdfffff>" + Localizer.Format("#LOC_KSPIE_Generic_EnginePerformance") + ":</color><size=10>");
+            sb.AppendLine(FormatThrustStatistics(maxThrustMk1, thrustIspMk1));
+            if (!string.IsNullOrEmpty(upgradeTechReq1)) sb.AppendLine(FormatThrustStatistics(maxThrustMk2, thrustIspMk2));
+            if (!string.IsNullOrEmpty(upgradeTechReq2)) sb.AppendLine(FormatThrustStatistics(maxThrustMk3, thrustIspMk3));
+            if (!string.IsNullOrEmpty(upgradeTechReq3)) sb.AppendLine(FormatThrustStatistics(maxThrustMk4, thrustIspMk4));
+            if (!string.IsNullOrEmpty(upgradeTechReq4)) sb.AppendLine(FormatThrustStatistics(maxThrustMk5, thrustIspMk5));
+            if (!string.IsNullOrEmpty(upgradeTechReq5)) sb.AppendLine(FormatThrustStatistics(maxThrustMk6, thrustIspMk6));
+            if (!string.IsNullOrEmpty(upgradeTechReq6)) sb.AppendLine(FormatThrustStatistics(maxThrustMk7, thrustIspMk7));
+            if (!string.IsNullOrEmpty(upgradeTechReq7)) sb.AppendLine(FormatThrustStatistics(maxThrustMk8, thrustIspMk8));
+            if (!string.IsNullOrEmpty(upgradeTechReq8)) sb.AppendLine(FormatThrustStatistics(maxThrustMk9, thrustIspMk9));
+            
+            sb.Append("</size>");
+            sb.AppendLine();
+
+            sb.AppendLine("<color=#7fdfffff>" + Localizer.Format("#LOC_KSPIE_Generic_PowerRequirementAndWasteheat") + ":</color><size=10>");
+            sb.AppendLine(FormatPowerStatistics(powerRequirementMk1, wasteheatMk1));
+            if (!string.IsNullOrEmpty(upgradeTechReq1)) sb.AppendLine(FormatPowerStatistics(powerRequirementMk2, wasteheatMk2));
+            if (!string.IsNullOrEmpty(upgradeTechReq2)) sb.AppendLine(FormatPowerStatistics(powerRequirementMk3, wasteheatMk3));
+            if (!string.IsNullOrEmpty(upgradeTechReq3)) sb.AppendLine(FormatPowerStatistics(powerRequirementMk4, wasteheatMk4));
+            if (!string.IsNullOrEmpty(upgradeTechReq4)) sb.AppendLine(FormatPowerStatistics(powerRequirementMk5, wasteheatMk5));
+            if (!string.IsNullOrEmpty(upgradeTechReq5)) sb.AppendLine(FormatPowerStatistics(powerRequirementMk6, wasteheatMk6));
+            if (!string.IsNullOrEmpty(upgradeTechReq6)) sb.AppendLine(FormatPowerStatistics(powerRequirementMk7, wasteheatMk7));
+            if (!string.IsNullOrEmpty(upgradeTechReq7)) sb.AppendLine(FormatPowerStatistics(powerRequirementMk8, wasteheatMk8));
+            if (!string.IsNullOrEmpty(upgradeTechReq8)) sb.AppendLine(FormatPowerStatistics(powerRequirementMk9, wasteheatMk9));
+            sb.Append("</size>");
+
+            return sb.ToString();
         }
     }
 }

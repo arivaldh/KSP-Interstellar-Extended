@@ -114,6 +114,8 @@ namespace FNPlugin
         public bool showPartTemperature = true;
         [KSPField]
         public double baseMaxIsp;
+        [KSPField]
+        public double wasteHeatBufferMult = 1;
 
         [KSPField]
         public bool isPlasmaNozzle = false;
