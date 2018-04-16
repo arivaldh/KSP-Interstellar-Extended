@@ -178,7 +178,7 @@ namespace FNPlugin
                         SyncVesselResourceManager.AddProcess(this, this,
                             ConversionProcess.Builder()
                                 .Module(this)
-                                .AddInputtPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _charged_particles_received, true)
+                                .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _charged_particles_received, true)
                                 .Build());
                         _previous_charged_particles_received = _charged_particles_received;
                     }
@@ -187,7 +187,7 @@ namespace FNPlugin
                         SyncVesselResourceManager.AddProcess(this, this,
                             ConversionProcess.Builder()
                                 .Module(this)
-                                .AddInputtPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _previous_charged_particles_received, true)
+                                .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _previous_charged_particles_received, true)
                                 .Build());
                         _previous_charged_particles_received /= 2;
                     }
