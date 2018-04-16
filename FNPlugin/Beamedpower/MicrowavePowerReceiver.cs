@@ -1608,6 +1608,7 @@ namespace FNPlugin
                                 var final_thermal_wasteheat = powerGeneratedResult.currentSupply + supply_ratio * total_conversion_waste_heat_production;
                                 SyncVesselResourceManager.AddProcess(this, this,
                                     ConversionProcess.Builder()
+                                    .Module(this)
                                     .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, final_thermal_wasteheat, true)
                                     .Build());
                             }
@@ -1659,6 +1660,7 @@ namespace FNPlugin
                             var solarWasteheat = solarInputMegajoules * (1 - effectiveSolarThermalElectricEfficiency);
                             SyncVesselResourceManager.AddProcess(this, this,
                                 ConversionProcess.Builder()
+                                    .Module(this)
                                     .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, supply_ratio * (total_conversion_waste_heat_production + solarWasteheat), true)
                                     .Build());
                         }

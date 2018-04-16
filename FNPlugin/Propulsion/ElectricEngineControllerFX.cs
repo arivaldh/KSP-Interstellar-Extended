@@ -464,6 +464,7 @@ namespace FNPlugin
             var heatProduction = heatToProduce;
             SyncVesselResourceManager.AddProcess(this, this,
                 ConversionProcess.Builder()
+                    .Module(this)
                     .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, heatToProduce, true)
                     .Build());
 
@@ -624,7 +625,7 @@ namespace FNPlugin
             return returnStr;
         }
 
-        public override string getResourceManagerDisplayName()
+        public override string GetResourceManagerDisplayName()
         {
             return part.partInfo.title + (Current_propellant != null ? " (" + Current_propellant.PropellantGUIName + ")" : "");
         }

@@ -904,8 +904,9 @@ namespace FNPlugin
             if (!CheatOptions.IgnoreMaxTemperature)
                 SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
-                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, scaledThrottle * FusionWasteHeat * wasteHeatMultiplier * plasmaRatio, true)
-                    .Build());
+                        .Module(this)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, scaledThrottle * FusionWasteHeat * wasteHeatMultiplier * plasmaRatio, true)
+                        .Build());
 
             return plasmaRatio;
         }

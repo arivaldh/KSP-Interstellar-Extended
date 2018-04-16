@@ -549,7 +549,7 @@ namespace FNPlugin
             science_to_add = 0;
         }
 
-        public override string getResourceManagerDisplayName() 
+        public override string GetResourceManagerDisplayName() 
         {
             if (IsEnabled) 
                 return "Science Lab (" + modes[active_mode] + ")";

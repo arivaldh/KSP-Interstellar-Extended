@@ -246,7 +246,7 @@ namespace FNPlugin
             previousRecievedPowerKW = recievedPowerKW;
         }
 
-        public override string getResourceManagerDisplayName()
+        public override string GetResourceManagerDisplayName()
         {
             return resourceGUIName + " Cryostat";
         }

@@ -112,7 +112,7 @@ namespace FNPlugin
             }
         }
 
-        public override string getResourceManagerDisplayName()
+        public override string GetResourceManagerDisplayName()
         {
             // use identical names so it will be grouped together
             return part.partInfo.title;

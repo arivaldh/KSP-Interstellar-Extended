@@ -909,7 +909,7 @@ namespace FNPlugin
                 GUILayout.Label("Max", right_bold_label, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
                 GUILayout.EndHorizontal();
 
-                var groupedPowerSupply = power_supply_list_archive.GroupBy(m => m.Key.getResourceManagerDisplayName());
+                var groupedPowerSupply = power_supply_list_archive.GroupBy(m => m.Key.GetResourceManagerDisplayName());
 
                 List<PowerProduction> sumarizedList = new List<PowerProduction>();
                 
@@ -952,7 +952,7 @@ namespace FNPlugin
 
                 List<PowerConsumption> sumarizedList = new List<PowerConsumption>();
 
-                var groupedPowerDraws = power_draw_list_archive.GroupBy(m => m.Key.getResourceManagerDisplayName());
+                var groupedPowerDraws = power_draw_list_archive.GroupBy(m => m.Key.GetResourceManagerDisplayName());
 
                 foreach (var group in groupedPowerDraws)
                 {

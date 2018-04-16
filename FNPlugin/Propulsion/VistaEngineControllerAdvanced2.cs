@@ -520,6 +520,7 @@ namespace FNPlugin
                 {
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
+                            .Module(this)
                             .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, enginePowerRequirement, true)
                             .Build());
                 }
@@ -530,6 +531,7 @@ namespace FNPlugin
                 absorbedWasteheat = FusionWasteHeat * wasteHeatMultiplier * fusionRatio * throttle * neutronbsorbionBonus;
                 SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
+                        .Module(this)
                         .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, absorbedWasteheat, true)
                         .Build());
 

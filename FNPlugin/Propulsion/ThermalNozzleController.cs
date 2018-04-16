@@ -1190,7 +1190,8 @@ namespace FNPlugin
 
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
-                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, sootModifier * wasteheatEfficiencyModifier * power_received, true)
+                            .Module(this)
+                            .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, sootModifier * wasteheatEfficiencyModifier * power_received, true)
                             .Build());
                 }
 
@@ -1300,6 +1301,7 @@ namespace FNPlugin
                     var resourceRatio = getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
+                            .Module(this)
                             .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, 20 * resourceRatio * max_fuel_flow_rate)
                             .Build());
                 }

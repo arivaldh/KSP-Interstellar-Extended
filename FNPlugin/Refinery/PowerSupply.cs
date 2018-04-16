@@ -28,7 +28,7 @@ namespace FNPlugin.Refinery
             return consumeFNResourcePerSecond(powerRequest, ResourceManager.FNRESOURCE_MEGAJOULES);
         }
 
-        public override string getResourceManagerDisplayName()
+        public override string GetResourceManagerDisplayName()
         {
             return displayName;
         }

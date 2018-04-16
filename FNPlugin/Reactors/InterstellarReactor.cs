@@ -1496,6 +1496,7 @@ namespace FNPlugin.Reactors
                 {
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
+                            .Module(this)
                             .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, ongoing_total_power_generated, true)
                             .Build());
                 }
@@ -2366,7 +2367,7 @@ namespace FNPlugin.Reactors
             }
         }
 
-        public override string getResourceManagerDisplayName()
+        public override string GetResourceManagerDisplayName()
         {
             var displayName = part.partInfo.title;
             if (fuel_modes.Count > 1 )

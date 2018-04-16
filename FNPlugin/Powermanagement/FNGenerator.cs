@@ -927,7 +927,8 @@ namespace FNPlugin
                         {
                             SyncVesselResourceManager.AddProcess(this, this,
                                 ConversionProcess.Builder()
-                                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond, true)
+                                    .Module(this)
+                                    .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond, true)
                                     .Build());
                         }
 
@@ -959,7 +960,8 @@ namespace FNPlugin
                         {
                             SyncVesselResourceManager.AddProcess(this, this,
                                 ConversionProcess.Builder()
-                                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond, true)
+                                    .Module(this)
+                                    .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond, true)
                                     .Build());
                         }
 
@@ -1113,9 +1115,9 @@ namespace FNPlugin
             return sb.ToString();
         }
 
-        public override string getResourceManagerDisplayName()
+        public override string GetResourceManagerDisplayName()
         {
-            var result = base.getResourceManagerDisplayName();
+            var result = base.GetResourceManagerDisplayName();
             if (isLimitedByMinThrotle)
                 return result;
 

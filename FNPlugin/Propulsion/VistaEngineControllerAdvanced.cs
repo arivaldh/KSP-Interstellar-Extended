@@ -430,10 +430,12 @@ namespace FNPlugin
                 {
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
+                            .Module(this)
                             .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, laserWasteheat, true)
                             .Build());
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
+                            .Module(this)
                             .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, absorbedWasteheat, true)
                             .Build());
                 }

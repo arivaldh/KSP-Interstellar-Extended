@@ -254,12 +254,14 @@ namespace FNPlugin
                     // Lasers produce Wasteheat
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
+                            .Module(this)
                             .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, recievedPower * (1 - efficiency), true)
                             .Build());
 
                     // The Aborbed wasteheat from Fusion
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
+                            .Module(this)
                             .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, FusionWasteHeat * wasteHeatMultiplier * fusionRatio, true)
                             .Build());
                 }

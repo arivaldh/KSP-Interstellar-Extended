@@ -527,6 +527,7 @@ namespace FNPlugin
                 if (!CheatOptions.IgnoreMaxTemperature)
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
+                            .Module(this)
                             .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, laserWasteheat, true)
                             .Build());
 
@@ -537,6 +538,7 @@ namespace FNPlugin
                 absorbedWasteheat = FusionWasteHeat * wasteHeatMultiplier * fusionRatio * throttle * neutronbsorbionBonus;
                 SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
+                        .Module(this)
                         .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, absorbedWasteheat, true)
                         .Build());
 
@@ -632,7 +634,7 @@ namespace FNPlugin
             }
         }
 
-        public override string getResourceManagerDisplayName()
+        public override string GetResourceManagerDisplayName()
         {
             return part.partInfo.title;
         }

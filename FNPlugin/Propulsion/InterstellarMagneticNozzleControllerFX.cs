@@ -177,7 +177,8 @@ namespace FNPlugin
                     {
                         SyncVesselResourceManager.AddProcess(this, this,
                             ConversionProcess.Builder()
-                                .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _charged_particles_received, true)
+                                .Module(this)
+                                .AddInputtPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _charged_particles_received, true)
                                 .Build());
                         _previous_charged_particles_received = _charged_particles_received;
                     }
@@ -185,7 +186,8 @@ namespace FNPlugin
                     {
                         SyncVesselResourceManager.AddProcess(this, this,
                             ConversionProcess.Builder()
-                                .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _previous_charged_particles_received, true)
+                                .Module(this)
+                                .AddInputtPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _previous_charged_particles_received, true)
                                 .Build());
                         _previous_charged_particles_received /= 2;
                     }
@@ -258,7 +260,7 @@ namespace FNPlugin
             return "";
         }
 
-        public override string getResourceManagerDisplayName()
+        public override string GetResourceManagerDisplayName()
         {
             return part.partInfo.title;
         }

@@ -305,7 +305,7 @@ namespace FNPlugin
             resflow = resflowf.ToString("0.0000000");
         }
 
-        public override string getResourceManagerDisplayName() 
+        public override string GetResourceManagerDisplayName() 
         {
             return part.partInfo.title;
         }

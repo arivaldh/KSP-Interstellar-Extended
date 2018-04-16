@@ -488,6 +488,7 @@ namespace FNPlugin
                 heat_production_f = heat_to_produce;
                 SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
+                        .Module(this)
                         .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, heat_to_produce, true)
                         .Build());
 
@@ -522,7 +523,7 @@ namespace FNPlugin
                 part.RequestResource(definitionMegajoule.id, -power_recieved_f * TimeWarp.fixedDeltaTime);
         }
 
-        public override string getResourceManagerDisplayName() 
+        public override string GetResourceManagerDisplayName() 
         {
             return part.partInfo.title + " (" + propNameStr + ")";
         }

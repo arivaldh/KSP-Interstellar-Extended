@@ -603,18 +603,13 @@ namespace FNPlugin
             }
         }
 
-        public virtual string getResourceManagerDisplayName()
+        public virtual string GetResourceManagerDisplayName()
         {
             string displayName = part.partInfo.title;
             if (similarParts != null && similarParts.Count > 1)
                 displayName += " " + partNrInList;
 
             return displayName;
-        }
-
-        public virtual string GetResourceManagerDisplayName()
-        {
-            return getResourceManagerDisplayName();
         }
 
         public virtual void Notify(List<ConversionProcess> processes)

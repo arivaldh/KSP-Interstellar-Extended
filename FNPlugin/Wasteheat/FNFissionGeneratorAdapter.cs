@@ -96,7 +96,7 @@ namespace FNPlugin
             }
         }
 
-        public override string getResourceManagerDisplayName()
+        public override string GetResourceManagerDisplayName()
         {
             // use identical names so it will be grouped together
             return part.partInfo.title;
@@ -135,6 +135,7 @@ namespace FNPlugin
                 {
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
+                            .Module(this)
                             .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, (generatorRate / 10000.0d), true)
                             .Build());
                 }

@@ -9,7 +9,7 @@ namespace FNPlugin
     {
         void receiveFNResource(double power_supplied, String resourcename);
         double consumeFNResource(double power_to_consume, String resourcename, double fixedDeltaTime = 0);
-        string getResourceManagerDisplayName();
+        string GetResourceManagerDisplayName();
         int getPowerPriority();
     }
 }

@@ -165,7 +165,7 @@ namespace FNPlugin
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            //builder.AppendFormat("Process for Module {0} fractionToProcess={1}", this.module.GetResourceManagerDisplayName(), this.FractionToProcess);
+            builder.AppendFormat("Process for Module {0} fractionToProcess={1}", this.module.GetResourceManagerDisplayName(), this.FractionToProcess);
             builder.Append(toStringInputs());
             builder.Append(toStringOutputs());
             return builder.ToString();

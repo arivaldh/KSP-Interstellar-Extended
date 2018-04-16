@@ -7,8 +7,7 @@ namespace FNPlugin
 {
     public interface IResourceSupplier 
     {
-        string getResourceManagerDisplayName();
-
+        string GetResourceManagerDisplayName();
         double supplyFNResourceFixed(double supply, String resourcename);
     }
 }
