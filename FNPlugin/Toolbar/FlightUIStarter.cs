@@ -83,6 +83,15 @@ namespace FNPlugin
                 }
             }
 
+            if (!hide_button)
+            {
+                SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(vessel);
+                if (show_window)
+                    manager.ShowWindow();
+
+                manager.OnGUI();
+            }
+
             show_window = false;
         }
     }

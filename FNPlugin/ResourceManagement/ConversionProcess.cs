@@ -118,9 +118,9 @@ namespace FNPlugin
         }
 
         public double FractionToProcess { get; private set;  }
+        public ISyncResourceModule module { get; private set; }
         private readonly List<Entry> inputs;
         private readonly List<Entry> outputs;
-        private readonly ISyncResourceModule module;
 
         protected ConversionProcess(ISyncResourceModule module, List<Entry> inputs, List<Entry> outputs)
         {
@@ -128,6 +128,34 @@ namespace FNPlugin
             this.module = module;
             this.inputs = inputs;
             this.outputs = outputs;
+        }
+
+        public void GetProduction(int resourceId, out double current, out double max)
+        {
+            current = 0;
+            max = 0;
+            foreach (Entry entry in inputs)
+            {
+                if (entry.ResourceId == resourceId)
+                {
+                    current += entry.Amount * (1 - FractionToProcess);
+                    max += entry.Amount;
+                }
+            }
+        }
+
+        public void GetConsumption(int resourceId, out double current, out double max)
+        {
+            current = 0;
+            max = 0;
+            foreach (Entry entry in outputs)
+            {
+                if (entry.ResourceId == resourceId)
+                {
+                    current += entry.Amount * (1 - FractionToProcess);
+                    max += entry.Amount;
+                }
+            }
         }
 
         public bool Run(SyncVesselResourceManager manager)
