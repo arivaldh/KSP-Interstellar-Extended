@@ -778,7 +778,7 @@ namespace FNPlugin
                 SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
                         .Module(this)
-                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, dWasteheatProductionMw * dLastPowerRatio, true)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, dWasteheatProductionMw * dLastPowerRatio)
                         .Build());
 
                 // show in GUI

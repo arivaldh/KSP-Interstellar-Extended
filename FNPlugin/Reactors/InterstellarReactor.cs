@@ -1492,14 +1492,11 @@ namespace FNPlugin.Reactors
                 if (!CheatOptions.UnbreakableJoints && CurrentFuelMode.NeutronsRatio > 0 && CurrentFuelMode.NeutronsRatio > 0)
                     neutronEmbrittlementDamage += ongoing_total_power_generated * timeWarpFixedDeltaTime * CurrentFuelMode.NeutronsRatio / neutronEmbrittlementDivider;
 
-                if (!CheatOptions.IgnoreMaxTemperature)
-                {
-                    SyncVesselResourceManager.AddProcess(this, this,
-                        ConversionProcess.Builder()
-                            .Module(this)
-                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, ongoing_total_power_generated, true)
-                            .Build());
-                }
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                        .Module(this)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, ongoing_total_power_generated, true)
+                        .Build());
 
                 ongoing_consumption_rate = ongoing_total_power_generated / maximumPower; 
 
@@ -1929,7 +1926,7 @@ namespace FNPlugin.Reactors
 
         protected bool ReactorIsOverheating()
         {
-            if (!CheatOptions.IgnoreMaxTemperature && getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT) >= emergencyPowerShutdownFraction && canShutdown)
+            if (getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT) >= emergencyPowerShutdownFraction && canShutdown)
             {
                 deactivate_timer++;
                 if (deactivate_timer > 3)
@@ -1943,9 +1940,6 @@ namespace FNPlugin.Reactors
 
         protected double GetSafetyOverheatPreventionRatio()
         {
-            if (CheatOptions.IgnoreMaxTemperature)
-                return 1;
-
             var wasteheatRatio = getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
             if (wasteheatRatio < safetyPowerReductionFraction)
                 return 1;

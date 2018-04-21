@@ -489,7 +489,7 @@ namespace FNPlugin
                 SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
                         .Module(this)
-                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, heat_to_produce, true)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, heat_to_produce)
                         .Build());
 
                 power_ratio = power_requested_f > 0 ? Math.Min(power_recieved_f / power_requested_f, 1.0) : 1;

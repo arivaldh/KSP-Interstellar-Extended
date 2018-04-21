@@ -434,17 +434,13 @@ namespace FNPlugin.Collectors
              * less heat than less effective power hungry drills. This should allow us to bring some variety into parts, if we want to.
              */
             
-            if (!CheatOptions.IgnoreMaxTemperature) // is this player not using no-heat cheat mode?
-            {
-                dTotalWasteHeatProduction = dPowerRequirementsMW * wasteHeatModifier; // calculate amount of heat to be produced
-                // push the heat onto them
-                SyncVesselResourceManager.AddProcess(this, this,
-                    ConversionProcess.Builder()
-                        .Module(this)
-                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, dTotalWasteHeatProduction, true)
-                        .Build());
-            }
-            
+            dTotalWasteHeatProduction = dPowerRequirementsMW * wasteHeatModifier; // calculate amount of heat to be produced
+            // push the heat onto them
+            SyncVesselResourceManager.AddProcess(this, this,
+                ConversionProcess.Builder()
+                    .Module(this)
+                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, dTotalWasteHeatProduction)
+                    .Build());
         }
 
     }

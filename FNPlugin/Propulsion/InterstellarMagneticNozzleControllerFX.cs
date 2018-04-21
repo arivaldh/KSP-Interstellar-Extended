@@ -171,31 +171,28 @@ namespace FNPlugin
                 var consumedByEngine = _attached_warpable_engine != null ? _attached_warpable_engine.propellantUsed : 0;
                 _hydrogenProduction = !CheatOptions.InfinitePropellant && chargedParticleRatio > 0 ? _attached_reactor.UseProductForPropulsion(chargedParticleRatio, consumedByEngine) : 0;
 
-                if (!CheatOptions.IgnoreMaxTemperature)
+                if (_attached_engine.isOperational && _attached_engine.currentThrottle > 0)
                 {
-                    if (_attached_engine.isOperational && _attached_engine.currentThrottle > 0)
-                    {
-                        SyncVesselResourceManager.AddProcess(this, this,
-                            ConversionProcess.Builder()
-                                .Module(this)
-                                .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _charged_particles_received, true)
-                                .Build());
-                        _previous_charged_particles_received = _charged_particles_received;
-                    }
-                    else if (_previous_charged_particles_received > 1)
-                    {
-                        SyncVesselResourceManager.AddProcess(this, this,
-                            ConversionProcess.Builder()
-                                .Module(this)
-                                .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _previous_charged_particles_received, true)
-                                .Build());
-                        _previous_charged_particles_received /= 2;
-                    }
-                    else
-                    {
-                        _charged_particles_received = 0;
-                        _previous_charged_particles_received = 0;
-                    }
+                    SyncVesselResourceManager.AddProcess(this, this,
+                        ConversionProcess.Builder()
+                            .Module(this)
+                            .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _charged_particles_received)
+                            .Build());
+                    _previous_charged_particles_received = _charged_particles_received;
+                }
+                else if (_previous_charged_particles_received > 1)
+                {
+                    SyncVesselResourceManager.AddProcess(this, this,
+                        ConversionProcess.Builder()
+                            .Module(this)
+                            .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, _previous_charged_particles_received)
+                            .Build());
+                    _previous_charged_particles_received /= 2;
+                }
+                else
+                {
+                    _charged_particles_received = 0;
+                    _previous_charged_particles_received = 0;
                 }
 
                 // update Isp

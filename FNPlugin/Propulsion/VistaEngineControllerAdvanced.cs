@@ -426,19 +426,11 @@ namespace FNPlugin
                 absorbedWasteheat = FusionWasteHeat * wasteHeatMultiplier * fusionRatio * throttle * neutronbsorbionBonus;
 
                 // Lasers produce Wasteheat
-                if (!CheatOptions.IgnoreMaxTemperature)
-                {
-                    SyncVesselResourceManager.AddProcess(this, this,
-                        ConversionProcess.Builder()
-                            .Module(this)
-                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, laserWasteheat, true)
-                            .Build());
-                    SyncVesselResourceManager.AddProcess(this, this,
-                        ConversionProcess.Builder()
-                            .Module(this)
-                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, absorbedWasteheat, true)
-                            .Build());
-                }
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                        .Module(this)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, laserWasteheat + absorbedWasteheat)
+                        .Build());
 
                 // change ratio propellants Hydrogen/Fusion
                 curEngineT.propellants.FirstOrDefault(pr => pr.name == InterstellarResourcesConfiguration.Instance.LqdDeuterium).ratio = (float)(standard_deuterium_rate / rateMultplier);  

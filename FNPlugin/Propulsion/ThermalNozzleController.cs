@@ -1176,24 +1176,21 @@ namespace FNPlugin
                 UpdateSootAccumulation();
 
                 // consume wasteheat
-                if (!CheatOptions.IgnoreMaxTemperature)
-                {
-                    var sootModifier = CheatOptions.UnbreakableJoints 
-                        ? 1 
-                        : sootHeatDivider > 0 
-                            ? 1 - (sootAccumulationPercentage / sootHeatDivider) 
-                            : 1;
+                var sootModifier = CheatOptions.UnbreakableJoints 
+                    ? 1 
+                    : sootHeatDivider > 0 
+                        ? 1 - (sootAccumulationPercentage / sootHeatDivider) 
+                        : 1;
 
-                    wasteheatEfficiencyModifier = _maxISP > GameConstants.MaxThermalNozzleIsp
-                        ? wasteheatEfficiencyHighTemperature
-                        : wasteheatEfficiencyLowTemperature;
+                wasteheatEfficiencyModifier = _maxISP > GameConstants.MaxThermalNozzleIsp
+                    ? wasteheatEfficiencyHighTemperature
+                    : wasteheatEfficiencyLowTemperature;
 
-                    SyncVesselResourceManager.AddProcess(this, this,
-                        ConversionProcess.Builder()
-                            .Module(this)
-                            .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, sootModifier * wasteheatEfficiencyModifier * power_received, true)
-                            .Build());
-                }
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                        .Module(this)
+                        .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, sootModifier * wasteheatEfficiencyModifier * power_received)
+                        .Build());
 
                 // calculate max thrust
                 heatExchangerThrustDivisor = GetHeatExchangerThrustDivisor();
@@ -1296,15 +1293,12 @@ namespace FNPlugin
                 // set engines maximum fuel flow
                 myAttachedEngine.maxFuelFlow = (float)Math.Max(Math.Min(1000, max_fuel_flow_rate), 1e-10);
 
-                if (!CheatOptions.IgnoreMaxTemperature)
-                {
-                    var resourceRatio = getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
-                    SyncVesselResourceManager.AddProcess(this, this,
-                        ConversionProcess.Builder()
-                            .Module(this)
-                            .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, 20 * resourceRatio * max_fuel_flow_rate)
-                            .Build());
-                }
+                var resourceRatio = getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                        .Module(this)
+                        .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, 20 * resourceRatio * max_fuel_flow_rate)
+                        .Build());
 
                 // Calculate
                 pre_coolers_active = _vesselPrecoolers.Sum(prc => prc.ValidAttachedIntakes);

@@ -923,14 +923,11 @@ namespace FNPlugin
 
                         received_power_per_second = effectiveInputPowerPerSecond;
 
-                        if (!CheatOptions.IgnoreMaxTemperature)
-                        {
-                            SyncVesselResourceManager.AddProcess(this, this,
-                                ConversionProcess.Builder()
-                                    .Module(this)
-                                    .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond, true)
-                                    .Build());
-                        }
+                        SyncVesselResourceManager.AddProcess(this, this,
+                            ConversionProcess.Builder()
+                                .Module(this)
+                                .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond)
+                                .Build());
 
                         electricdtps = Math.Max(effectiveInputPowerPerSecond * powerOutputMultiplier, 0);
 
@@ -956,14 +953,11 @@ namespace FNPlugin
 
                         var effectiveInputPowerPerSecond = received_power_per_second * _totalEff;
 
-                        if (!CheatOptions.IgnoreMaxTemperature)
-                        {
-                            SyncVesselResourceManager.AddProcess(this, this,
-                                ConversionProcess.Builder()
-                                    .Module(this)
-                                    .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond, true)
-                                    .Build());
-                        }
+                        SyncVesselResourceManager.AddProcess(this, this,
+                            ConversionProcess.Builder()
+                                .Module(this)
+                                .AddInputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, effectiveInputPowerPerSecond)
+                                .Build());
 
                         electricdtps = Math.Max(effectiveInputPowerPerSecond * powerOutputMultiplier, 0);
                         maxElectricdtps = maxChargedPower * _totalEff;

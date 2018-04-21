@@ -141,26 +141,33 @@ namespace FNPlugin
 
         public override void Commit()
         {
-            int timeTicks = Math.Max(1, (int)Math.Ceiling(Math.Abs(changedAmount) / (maxAmount * TIME_TICK_RATIO)));
-            double warpTick = ((double)TimeWarp.fixedDeltaTime) / timeTicks;
-
-            double tickGenerated = changedAmount / timeTicks;
-            for (int tick = 0; tick < timeTicks; tick++)
+            if (!CheatOptions.IgnoreMaxTemperature)
             {
-                double tickConsumed = 0.0d;
-                radiators.ForEach(radiator => tickConsumed += warpTick * radiator.GetConsumedWasteHeatPerSecond());
+                int timeTicks = Math.Max(1, (int)Math.Ceiling(Math.Abs(changedAmount) / (maxAmount * TIME_TICK_RATIO)));
+                double warpTick = ((double)TimeWarp.fixedDeltaTime) / timeTicks;
 
-                alreadyGeneratedHeat += tickGenerated;
-                alreadyConsumedHeat += tickConsumed;
+                double tickGenerated = changedAmount / timeTicks;
+                for (int tick = 0; tick < timeTicks; tick++)
+                {
+                    double tickConsumed = 0.0d;
+                    radiators.ForEach(radiator => tickConsumed += warpTick * radiator.GetConsumedWasteHeatPerSecond());
+
+                    alreadyGeneratedHeat += tickGenerated;
+                    alreadyConsumedHeat += tickConsumed;
+                }
+
+                changedAmount = alreadyGeneratedHeat - alreadyConsumedHeat;
+
+                base.Commit();
+
+                alreadyGeneratedHeat = 0;
+                alreadyConsumedHeat = 0;
+                radiators.Clear();
             }
-
-            changedAmount = alreadyGeneratedHeat - alreadyConsumedHeat;
-
-            base.Commit();
-
-            alreadyGeneratedHeat = 0;
-            alreadyConsumedHeat = 0;
-            radiators.Clear();
+            else
+            {
+                // nothing
+            }
         }
     }
 

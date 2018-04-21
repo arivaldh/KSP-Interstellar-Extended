@@ -359,9 +359,7 @@ namespace FNPlugin
                 return HighLogic.LoadedSceneIsFlight 
                     ? isThermalReceiver 
                         ? 1 
-                        : CheatOptions.IgnoreMaxTemperature 
-                            ? 1 
-                            : (1 - getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT)) 
+                        : (1 - getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT)) 
                     : 1; 
             }
         }
@@ -375,7 +373,7 @@ namespace FNPlugin
         {
             get 
             {
-                if (!HighLogic.LoadedSceneIsFlight || CheatOptions.IgnoreMaxTemperature || electricWasteheatExponent == 0) return 1;
+                if (!HighLogic.LoadedSceneIsFlight || electricWasteheatExponent == 0) return 1;
 
                 if (electricWasteheatExponent == 1)
                     return 1 - wasteheatRatio;
@@ -1533,7 +1531,7 @@ namespace FNPlugin
 
             StoreGeneratorRequests();
 
-            wasteheatRatio = CheatOptions.IgnoreMaxTemperature ? 0 : Math.Min(1, getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT));
+            wasteheatRatio = getSyncResourceBarRatio(ResourceManager.FNRESOURCE_WASTEHEAT);
 
             CalculateThermalSolarPower();
 
@@ -1602,16 +1600,13 @@ namespace FNPlugin
 
                             var powerGeneratedResult = managedPowerSupplyPerSecondMinimumRatio(total_thermal_power_provided, total_thermal_power_provided, minimumRatio, ResourceManager.FNRESOURCE_THERMALPOWER);
 
-                            if (!CheatOptions.IgnoreMaxTemperature)
-                            {
-                                var supply_ratio = powerGeneratedResult.currentSupply / total_thermal_power_provided;
-                                var final_thermal_wasteheat = powerGeneratedResult.currentSupply + supply_ratio * total_conversion_waste_heat_production;
-                                SyncVesselResourceManager.AddProcess(this, this,
-                                    ConversionProcess.Builder()
+                            var supply_ratio = powerGeneratedResult.currentSupply / total_thermal_power_provided;
+                            var final_thermal_wasteheat = powerGeneratedResult.currentSupply + supply_ratio * total_conversion_waste_heat_production;
+                            SyncVesselResourceManager.AddProcess(this, this,
+                                ConversionProcess.Builder()
                                     .Module(this)
-                                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, final_thermal_wasteheat, true)
+                                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, final_thermal_wasteheat)
                                     .Build());
-                            }
 
                             thermal_power_ratio = total_thermal_power_available > 0 ? powerGeneratedResult.currentSupply / total_thermal_power_available : 0;
 
@@ -1655,15 +1650,12 @@ namespace FNPlugin
                         var supply_ratio = powerGeneratedResult.currentSupply / total_beamed_electric_power_provided;
 
                         // only generate wasteheat from beamed power when actualy using the energy
-                        if (!CheatOptions.IgnoreMaxTemperature)
-                        {
-                            var solarWasteheat = solarInputMegajoules * (1 - effectiveSolarThermalElectricEfficiency);
-                            SyncVesselResourceManager.AddProcess(this, this,
-                                ConversionProcess.Builder()
-                                    .Module(this)
-                                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, supply_ratio * (total_conversion_waste_heat_production + solarWasteheat), true)
-                                    .Build());
-                        }
+                        var solarWasteheat = solarInputMegajoules * (1 - effectiveSolarThermalElectricEfficiency);
+                        SyncVesselResourceManager.AddProcess(this, this,
+                            ConversionProcess.Builder()
+                                .Module(this)
+                                .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, supply_ratio * (total_conversion_waste_heat_production + solarWasteheat))
+                                .Build());
 
                         foreach (var item in received_power)
                         {

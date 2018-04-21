@@ -249,22 +249,14 @@ namespace FNPlugin
                 var plasma_ratio = recievedPower / powerRequirement;
                 var fusionRatio = plasma_ratio >= 1 ? 1 : plasma_ratio > 0.75 ? Math.Pow(plasma_ratio, 6.0) : 0;
 
-                if (!CheatOptions.IgnoreMaxTemperature)
-                {
-                    // Lasers produce Wasteheat
-                    SyncVesselResourceManager.AddProcess(this, this,
-                        ConversionProcess.Builder()
-                            .Module(this)
-                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, recievedPower * (1 - efficiency), true)
-                            .Build());
-
-                    // The Aborbed wasteheat from Fusion
-                    SyncVesselResourceManager.AddProcess(this, this,
-                        ConversionProcess.Builder()
-                            .Module(this)
-                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, FusionWasteHeat * wasteHeatMultiplier * fusionRatio, true)
-                            .Build());
-                }
+                // Lasers produce Wasteheat
+                // The Aborbed wasteheat from Fusion
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                        .Module(this)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, recievedPower * (1 - efficiency))
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, FusionWasteHeat * wasteHeatMultiplier * fusionRatio)
+                        .Build());
 
                 // change ratio propellants Hydrogen/Fusion
                 curEngineT.propellants.FirstOrDefault(pr => pr.name == InterstellarResourcesConfiguration.Instance.LqdDeuterium).ratio = (float)(standard_deuterium_rate / throttle / throttle);

@@ -516,23 +516,15 @@ namespace FNPlugin
                 laserWasteheat = recievedPowerFixed * (1 - LaserEfficiency);
 
                 // Lasers produce Wasteheat
-                if (!CheatOptions.IgnoreMaxTemperature)
-                {
-                    SyncVesselResourceManager.AddProcess(this, this,
-                        ConversionProcess.Builder()
-                            .Module(this)
-                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, enginePowerRequirement, true)
-                            .Build());
-                }
-
                 // The Absorbed wasteheat from Fusion
                 var rateMultplier = MinIsp / SelectedIsp;
                 var neutronbsorbionBonus = 1 - NeutronAbsorptionFractionAtMinIsp * (1 - ((SelectedIsp - MinIsp) / (MaxIsp - MinIsp)));
                 absorbedWasteheat = FusionWasteHeat * wasteHeatMultiplier * fusionRatio * throttle * neutronbsorbionBonus;
+
                 SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
                         .Module(this)
-                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, absorbedWasteheat, true)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, enginePowerRequirement + absorbedWasteheat)
                         .Build());
 
                 // change ratio propellants Hydrogen/Fusion

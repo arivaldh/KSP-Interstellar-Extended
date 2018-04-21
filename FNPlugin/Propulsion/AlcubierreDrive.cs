@@ -1087,14 +1087,11 @@ namespace FNPlugin
 
         private void ProduceWasteheat(double powerReturned)
         {
-            if (!CheatOptions.IgnoreMaxTemperature)
-            {
-                SyncVesselResourceManager.AddProcess(this, this,
-                    ConversionProcess.Builder()
-                        .Module(this)
-                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, powerReturned * (isupgraded ? wasteheatRatioUpgraded : wasteheatRatio), true)
-                        .Build());
-            }
+            SyncVesselResourceManager.AddProcess(this, this,
+                ConversionProcess.Builder()
+                    .Module(this)
+                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, powerReturned * (isupgraded ? wasteheatRatioUpgraded : wasteheatRatio))
+                    .Build());
         }
 
         private double GetPowerRequirementForWarp(double lightspeedFraction)

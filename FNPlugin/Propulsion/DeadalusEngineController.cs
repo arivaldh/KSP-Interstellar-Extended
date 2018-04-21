@@ -901,12 +901,11 @@ namespace FNPlugin
             powerUsage = (recievedPower * 0.001).ToString("0.000") + " GW / " + (requestedPower * 0.001).ToString("0.000") + " GW";
 
             // The Absorbed wasteheat from Fusion production and reaction
-            if (!CheatOptions.IgnoreMaxTemperature)
-                SyncVesselResourceManager.AddProcess(this, this,
-                    ConversionProcess.Builder()
-                        .Module(this)
-                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, scaledThrottle * FusionWasteHeat * wasteHeatMultiplier * plasmaRatio, true)
-                        .Build());
+            SyncVesselResourceManager.AddProcess(this, this,
+                ConversionProcess.Builder()
+                    .Module(this)
+                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, scaledThrottle * FusionWasteHeat * wasteHeatMultiplier * plasmaRatio)
+                    .Build());
 
             return plasmaRatio;
         }

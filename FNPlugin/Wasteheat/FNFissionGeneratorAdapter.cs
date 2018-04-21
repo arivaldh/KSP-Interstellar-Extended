@@ -131,14 +131,11 @@ namespace FNPlugin
 
                 megaJouleGeneratorPowerSupply = supplyFNResourcePerSecondWithMax(generatorRate / 1000, generatorMax / 1000, ResourceManager.FNRESOURCE_MEGAJOULES);
 
-                if (!CheatOptions.IgnoreMaxTemperature)
-                {
-                    SyncVesselResourceManager.AddProcess(this, this,
-                        ConversionProcess.Builder()
-                            .Module(this)
-                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, (generatorRate / 10000.0d), true)
-                            .Build());
-                }
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                        .Module(this)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, (generatorRate / 10000.0d))
+                        .Build());
             }
             catch (Exception e)
             {

@@ -610,14 +610,11 @@ namespace FNPlugin
                 nuclear_power += 1000 * reactorPowerTransmissionRatio * transmissionEfficiencyRatio * receivedPowerFixedDelta;
 
                 // generate wasteheat for converting electric power to beamed power
-                if (!CheatOptions.IgnoreMaxTemperature)
-                {
-                    SyncVesselResourceManager.AddProcess(this, this,
-                        ConversionProcess.Builder()
-                            .Module(this)
-                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, receivedPowerFixedDelta * transmissionWasteRatio, true)
-                            .Build());
-                }
+                SyncVesselResourceManager.AddProcess(this, this,
+                    ConversionProcess.Builder()
+                        .Module(this)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, receivedPowerFixedDelta * transmissionWasteRatio)
+                        .Build());
 
                 foreach (ModuleDeployableSolarPanel panel in panels)
                 {
