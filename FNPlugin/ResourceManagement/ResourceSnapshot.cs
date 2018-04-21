@@ -141,7 +141,7 @@ namespace FNPlugin
 
         public override void Commit()
         {
-            int timeTicks = Math.Max(1, (int)Math.Ceiling(changedAmount / (maxAmount * TIME_TICK_RATIO)));
+            int timeTicks = Math.Max(1, (int)Math.Ceiling(Math.Abs(changedAmount) / (maxAmount * TIME_TICK_RATIO)));
             double warpTick = ((double)TimeWarp.fixedDeltaTime) / timeTicks;
 
             double tickGenerated = changedAmount / timeTicks;
