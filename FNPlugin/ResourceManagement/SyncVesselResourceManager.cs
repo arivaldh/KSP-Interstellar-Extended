@@ -39,6 +39,10 @@ namespace FNPlugin
         private Dictionary<ISyncResourceModule, List<ConversionProcess>> processes;
         private Dictionary<int, ResourceSnapshot> snapshots;
 
+        // FixedUpdate Synchronization results
+        Dictionary<int, Dictionary<string, ProductionConsumption>> productions = new Dictionary<int, Dictionary<string, ProductionConsumption>>();
+        Dictionary<int, Dictionary<string, ProductionConsumption>> consumptions = new Dictionary<int, Dictionary<string, ProductionConsumption>>();
+
         // GUI elements
         private const int labelWidth = 240;
         private const int valueWidth = 55;
@@ -138,6 +142,17 @@ namespace FNPlugin
                 }
             } while (ranOK);
 
+            productions.Clear();
+            consumptions.Clear();
+            foreach (int resourceId in snapshots.Keys)
+            {
+                if (renderWindow[resourceId])
+                {
+                    productions.Add(resourceId, GetProductionPerSecond(resourceId));
+                    consumptions.Add(resourceId, GetConsumptionPerSecond(resourceId));
+                }
+            }
+
             foreach (ResourceSnapshot snapshot in snapshots.Values)
             {
                 snapshot.Commit();
@@ -151,7 +166,7 @@ namespace FNPlugin
             processes.Clear();
         }
 
-        private Dictionary<string, ProductionConsumption> GetProduction(int resourceId)
+        private Dictionary<string, ProductionConsumption> GetProductionPerSecond(int resourceId)
         {
             Dictionary<string, ProductionConsumption> result = new Dictionary<string, ProductionConsumption>();
             foreach (List<ConversionProcess> processesList in processes.Values)
@@ -161,7 +176,7 @@ namespace FNPlugin
                     string name = process.module.GetResourceManagerDisplayName();
                     double current;
                     double max;
-                    process.GetProduction(resourceId, out current, out max);
+                    process.GetProductionPerSecond(resourceId, out current, out max);
 
                     if (max < Double.Epsilon) continue;
 
@@ -179,7 +194,7 @@ namespace FNPlugin
             return result;
         }
 
-        private Dictionary<string, ProductionConsumption> GetConsumption(int resourceId)
+        private Dictionary<string, ProductionConsumption> GetConsumptionPerSecond(int resourceId)
         {
             Dictionary<string, ProductionConsumption> result = new Dictionary<string, ProductionConsumption>();
             foreach (List<ConversionProcess> processesList in processes.Values)
@@ -189,7 +204,7 @@ namespace FNPlugin
                     string name = process.module.GetResourceManagerDisplayName();
                     double current;
                     double max;
-                    process.GetConsumption(resourceId, out current, out max);
+                    process.GetConsumptionPerSecond(resourceId, out current, out max);
 
                     if (max < Double.Epsilon) continue;
 
@@ -279,9 +294,9 @@ namespace FNPlugin
             {
                 foreach (int resourceId in snapshots.Keys)
                 {
-                    if (ProduceGUI(resourceId) && renderWindow[resourceId])
+                    if (renderWindow.ContainsKey(resourceId) && renderWindow[resourceId])
                     {
-                        string title = PartResourceLibrary.Instance.GetDefinition(resourceId).name + "Synchronous Management Display";
+                        string title = PartResourceLibrary.Instance.GetDefinition(resourceId).name + " Synchronous Management Display";
                         windowPositions[resourceId] = GUILayout.Window(resourceIdToWindowId[resourceId], windowPositions[resourceId], DoWindow, title);
                     }
                 }
@@ -349,19 +364,17 @@ namespace FNPlugin
             GUILayout.Space(2);
             GUILayout.BeginVertical();
 
-            Dictionary<string, ProductionConsumption> productions = this.GetProduction(resourceId);
             double production = 0;
             double maxProduction = 0;
-            foreach (ProductionConsumption entry in productions.Values)
+            foreach (ProductionConsumption entry in productions[resourceId].Values)
             {
                 production += entry.Current;
                 maxProduction += entry.Max;
             }
 
-            Dictionary<string, ProductionConsumption> consumptions = this.GetConsumption(resourceId);
             double consumption = 0;
             double maxConsumption = 0;
-            foreach (ProductionConsumption entry in consumptions.Values)
+            foreach (ProductionConsumption entry in consumptions[resourceId].Values)
             {
                 consumption += entry.Current;
                 maxConsumption += entry.Max;
@@ -369,12 +382,12 @@ namespace FNPlugin
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Theoretical Supply", leftBoldLabel, GUILayout.ExpandWidth(true));
-            GUILayout.Label(GetUnitFormatString(maxProduction), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
+            GUILayout.Label(GetUnitFormatString(resourceName, maxProduction), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Current Supply", leftBoldLabel, GUILayout.ExpandWidth(true));
-            GUILayout.Label(GetUnitFormatString(production), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
+            GUILayout.Label(GetUnitFormatString(resourceName, production), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -384,28 +397,8 @@ namespace FNPlugin
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Power Demand", leftBoldLabel, GUILayout.ExpandWidth(true));
-            GUILayout.Label(GetUnitFormatString(consumption), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
+            GUILayout.Label(GetUnitFormatString(resourceName, consumption), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
             GUILayout.EndHorizontal();
-
-            //double new_power_supply = getOverproduction();
-            //double net_utilisation_supply = getDemandStableSupply();
-
-            //GUIStyle net_poer_style = new_power_supply < -0.001 ? redLabel : greenLabel;
-            //GUIStyle utilisation_style = net_utilisation_supply > 1.001 ? redLabel : greenLabel;
-
-            //GUILayout.BeginHorizontal();
-            //var new_power_label = (resourceName == ResourceManager.FNRESOURCE_WASTEHEAT) ? "Net Change" : "Net Power";
-            //GUILayout.Label(new_power_label, leftBoldLabel, GUILayout.ExpandWidth(true));
-            //GUILayout.Label(GetUnitFormatString(new_power_supply), net_poer_style, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
-            //GUILayout.EndHorizontal();
-
-            //if (!double.IsNaN(net_utilisation_supply) && !double.IsInfinity(net_utilisation_supply))
-            //{
-            //    GUILayout.BeginHorizontal();
-            //    GUILayout.Label("Utilisation", leftBoldLabel, GUILayout.ExpandWidth(true));
-            //    GUILayout.Label((net_utilisation_supply).ToString("P3"), utilisation_style, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
-            //    GUILayout.EndHorizontal();
-            //}
 
             GUILayout.Space(5);
             GUILayout.BeginHorizontal();
@@ -414,12 +407,12 @@ namespace FNPlugin
             GUILayout.Label("Max", rightBoldLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
             GUILayout.EndHorizontal();
 
-            foreach (var entry in productions.OrderByDescending(entry => entry.Value.Current))
+            foreach (var entry in productions[resourceId].OrderByDescending(entry => entry.Value.Current))
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label(entry.Key, leftAlignedLabel, GUILayout.ExpandWidth(true));
-                GUILayout.Label(GetUnitFormatString(entry.Value.Current), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
-                GUILayout.Label(GetUnitFormatString(entry.Value.Max), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
+                GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Current), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
+                GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Max), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
                 GUILayout.EndHorizontal();
             }
 
@@ -431,12 +424,12 @@ namespace FNPlugin
             //GUILayout.Label("Rank", right_bold_label, GUILayout.ExpandWidth(false), GUILayout.MinWidth(priorityWidth));
             GUILayout.EndHorizontal();
 
-            foreach (var entry in consumptions.OrderByDescending(entry => entry.Value.Current))
+            foreach (var entry in consumptions[resourceId].OrderByDescending(entry => entry.Value.Current))
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label(entry.Key, leftAlignedLabel, GUILayout.ExpandWidth(true));
-                GUILayout.Label(GetUnitFormatString(entry.Value.Current), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
-                GUILayout.Label(GetUnitFormatString(entry.Value.Max), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
+                GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Current), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
+                GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Max), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
                 GUILayout.EndHorizontal();
             }
 
@@ -453,28 +446,66 @@ namespace FNPlugin
             GUI.DragWindow();
         }
 
-        protected string GetUnitFormatString(double amount)
+        protected string GetUnit(string resourceName)
         {
-            if (Math.Abs(amount) >= 1000)
+            if (resourceName == ResourceManager.FNRESOURCE_MEGAJOULES ||
+                resourceName == ResourceManager.FNRESOURCE_THERMALPOWER ||
+                resourceName == ResourceManager.FNRESOURCE_CHARGED_PARTICLES ||
+                resourceName == ResourceManager.FNRESOURCE_WASTEHEAT)
             {
-                if (Math.Abs(amount) > 20000)
-                    return (amount / 1000).ToString("0.0") + " GU";
-                else
-                    return (amount / 1000).ToString("0.00") + " GU";
+                return "W";
+            }
+            return "U";
+        }
+
+        protected int GetUnitMultiplier(string resourceName)
+        {
+            if (resourceName == ResourceManager.FNRESOURCE_MEGAJOULES ||
+                resourceName == ResourceManager.FNRESOURCE_THERMALPOWER ||
+                resourceName == ResourceManager.FNRESOURCE_CHARGED_PARTICLES ||
+                resourceName == ResourceManager.FNRESOURCE_WASTEHEAT)
+            {
+                return 1_000_000;
+            }
+            return 1;
+        }
+
+        protected string GetPrefix(ref double amount)
+        {
+            if (Math.Abs(amount) >= 1e+9)
+            {
+                amount /= 1e+9;
+                return "G";
+            }
+            else if (Math.Abs(amount) >= 1e+6)
+            {
+                amount /= 1e+6;
+                return "M";
+            }
+            else if (Math.Abs(amount) >= 1e+3)
+            {
+                amount /= 1e+3;
+                return "K";
             }
             else
             {
-                if (Math.Abs(amount) > 20)
-                    return amount.ToString("0.0") + " MU";
-                else
-                {
-                    if (Math.Abs(amount) >= 1)
-                        return amount.ToString("0.00") + " MU";
-
-                    else
-                        return (amount * 1000).ToString("0.0") + " KU";
-                }
+                return "";
             }
+        }
+
+        protected string GetUnitFormatString(string resourceName, double amount)
+        {
+            string unit = GetUnit(resourceName);
+            int multiplier = GetUnitMultiplier(resourceName);
+
+            amount *= multiplier;
+
+            string prefix = GetPrefix(ref amount);
+
+            if (Math.Abs(amount) > 20)
+                return (amount).ToString("0.0") + " " + prefix + unit;
+            else
+                return (amount).ToString("0.00") + " " + prefix + unit;
         }
     }
 }

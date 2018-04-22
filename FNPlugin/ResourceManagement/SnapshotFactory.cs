@@ -26,11 +26,11 @@ namespace FNPlugin
                 return new WasteHeatSnapshot(vessel, resourceId, resourceName);
             }
             // Thermal Power and Charged Particles are always distributed Point-to-Point
-            else if (resourceName.Equals(ResourceManager.FNRESOURCE_THERMALPOWER) ||
-                     resourceName.Equals(ResourceManager.FNRESOURCE_CHARGED_PARTICLES))
-            {
-                return new PTPSnapshot(vessel, resourceId, resourceName);
-            }
+            //else if (resourceName.Equals(ResourceManager.FNRESOURCE_THERMALPOWER) ||
+            //         resourceName.Equals(ResourceManager.FNRESOURCE_CHARGED_PARTICLES))
+            //{
+            //    return new PTPSnapshot(vessel, resourceId, resourceName);
+            //}
             else
             {
                 return new ResourceSnapshot(vessel, resourceId, resourceName);

@@ -60,7 +60,6 @@
     <Compile Include="ResourceManagement\ISyncResourceModule.cs" />
     <Compile Include="ResourceManagement\ResourceSnapshot.cs" />
     <Compile Include="ResourceManagement\ConversionProcess.cs" />
-    <Compile Include="ResourceManagement\SyncResourceOvermanager.cs" />
     <Compile Include="ResourceManagement\SyncVesselResourceManager.cs" />
     <Compile Include="ResourceManagement\SnapshotFactory.cs" />
     <Compile Include="RDColoredUpgradeIcon.cs" />

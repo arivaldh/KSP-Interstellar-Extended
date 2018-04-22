@@ -614,7 +614,6 @@ namespace FNPlugin
 
         public virtual void Notify(List<ConversionProcess> processes)
         {
-            //Debug.Log("processes in " + this.part.name);
             //foreach (ConversionProcess process in processes)
             //{
             //    Debug.Log(process);

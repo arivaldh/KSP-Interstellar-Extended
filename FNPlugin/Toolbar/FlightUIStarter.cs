@@ -21,6 +21,11 @@ namespace FNPlugin
             }
         }
 
+        public void FixedUpdate()
+        {
+            SyncVesselResourceManager.SynchronizeAll();
+        }
+
         protected void OnGUI()
         {
             Vessel vessel = FlightGlobals.ActiveVessel;

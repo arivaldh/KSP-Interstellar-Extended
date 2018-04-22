@@ -30,7 +30,7 @@ namespace FNPlugin
 
             public override string ToString()
             {
-                return String.Format("Entry[{0}, {1}, {2}, {3}]", ResourceName, ResourceId, Amount, DumpExcess);
+                return String.Format("Entry[{0}, {1}, {2}]", ResourceName, Amount, DumpExcess);
             }
         }
 
@@ -46,7 +46,7 @@ namespace FNPlugin
                 : base(resourceName, resourceId, amount * TimeWarp.fixedDeltaTime, dumpExcess) { }
         }
 
-        public class ProcessBuilder : Object
+        public class ProcessBuilder
         {
             private List<Entry> inputs;
             private List<Entry> outputs;
@@ -130,21 +130,7 @@ namespace FNPlugin
             this.outputs = outputs;
         }
 
-        public void GetProduction(int resourceId, out double current, out double max)
-        {
-            current = 0;
-            max = 0;
-            foreach (Entry entry in inputs)
-            {
-                if (entry.ResourceId == resourceId)
-                {
-                    current += entry.Amount * (1 - FractionToProcess);
-                    max += entry.Amount;
-                }
-            }
-        }
-
-        public void GetConsumption(int resourceId, out double current, out double max)
+        public void GetProductionPerSecond(int resourceId, out double current, out double max)
         {
             current = 0;
             max = 0;
@@ -156,6 +142,24 @@ namespace FNPlugin
                     max += entry.Amount;
                 }
             }
+            current /= TimeWarp.fixedDeltaTime;
+            max /= TimeWarp.fixedDeltaTime;
+        }
+
+        public void GetConsumptionPerSecond(int resourceId, out double current, out double max)
+        {
+            current = 0;
+            max = 0;
+            foreach (Entry entry in inputs)
+            {
+                if (entry.ResourceId == resourceId)
+                {
+                    current += entry.Amount * (1 - FractionToProcess);
+                    max += entry.Amount;
+                }
+            }
+            current /= TimeWarp.fixedDeltaTime;
+            max /= TimeWarp.fixedDeltaTime;
         }
 
         public bool Run(SyncVesselResourceManager manager)
@@ -193,7 +197,7 @@ namespace FNPlugin
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendFormat("Process for Module {0} fractionToProcess={1}", this.module.GetResourceManagerDisplayName(), this.FractionToProcess);
+            builder.AppendFormat("Process for Module {0} fractionToProcess={1}\n", this.module.GetResourceManagerDisplayName(), this.FractionToProcess);
             builder.Append(toStringInputs());
             builder.Append(toStringOutputs());
             return builder.ToString();
