@@ -67,8 +67,6 @@ namespace FNPlugin
         public string propNameStr = "";
         [KSPField(guiActive = true, guiName = "#LOC_KSPIE_ElectricEngine_powerShare")]
         public string electricalPowerShareStr = "";
-        [KSPField(guiActive = true, guiName = "#LOC_KSPIE_ElectricEngine_powerRequested", guiFormat = "F3", guiUnits = " MW")]
-        public double power_request;
         [KSPField(guiActive = true, guiName = "#LOC_KSPIE_ElectricEngine_powerConsumption")]
         public string electricalPowerConsumptionStr = "";
         [KSPField(guiActive = true, guiName = "#LOC_KSPIE_ElectricEngine_propellantEfficiency")]
@@ -92,7 +90,7 @@ namespace FNPlugin
         double _g0 = PluginHelper.GravityConstant;
         double _modifiedEngineBaseIsp;
         double _electrical_share_f;
-        double _electrical_consumption_f;
+        double _electrical_consumption;
         double _previousAvailablePower = 0;
         double _heat_production_f;
         double _thrust_d = 0;
@@ -101,6 +99,7 @@ namespace FNPlugin
         double _modifiedCurrentPropellantIspMultiplier;
         double _maxIsp;
         double _maxFuelFlowRate;
+        ConversionProcess request;
 
         int _rep;
         int _initializationCountdown;
@@ -357,7 +356,7 @@ namespace FNPlugin
                 Fields["heatProductionStr"].guiActive = true;
                 Fields["efficiencyStr"].guiActive = true;
                 electricalPowerShareStr = (100.0 * _electrical_share_f).ToString("0.00") + "%";
-                electricalPowerConsumptionStr = _electrical_consumption_f.ToString("0.000") + " MW";
+                electricalPowerConsumptionStr = _electrical_consumption.ToString("0.000") + " MW";
                 heatProductionStr = _heat_production_f.ToString("0.000") + " MW";
 
                 if (Current_propellant == null)
@@ -439,42 +438,29 @@ namespace FNPlugin
             maxThrottlePower = maxEffectivePower * ModifiedThrotte;
             var currentPropellantEfficiency = CurrentPropellantEfficiency;
 
-            if (CheatOptions.InfiniteElectricity)
-            {
-                power_request = maxThrottlePower;
-            }
-            else
-            {
-                var availablePower = Math.Max(getStableResourceSupply(ResourceManager.FNRESOURCE_MEGAJOULES) - getCurrentHighPriorityResourceDemand(ResourceManager.FNRESOURCE_MEGAJOULES), 0);
-                var megaJoulesBarRatio = getResourceBarRatio(ResourceManager.FNRESOURCE_MEGAJOULES);
-
-                var effectiveResourceThrotling = megaJoulesBarRatio > OneThird ? 1 : megaJoulesBarRatio * 3;
-
-                var powerPerEngine = effectiveResourceThrotling * ModifiedThrotte * EvaluateMaxThrust(availablePower * _electrical_share_f) * CurrentIspMultiplier * _modifiedEngineBaseIsp / GetPowerThrustModifier() * PluginHelper.GravityConstant;
-                power_request = currentPropellantEfficiency <= 0 ? 0 : Math.Min(powerPerEngine / currentPropellantEfficiency, maxThrottlePower);
-            }
-
-            var powerReceived = CheatOptions.InfiniteElectricity 
-                ? power_request
-                : consumeFNResourcePerSecond(power_request, ResourceManager.FNRESOURCE_MEGAJOULES);
-
             // produce waste heat
-            var heatToProduce = powerReceived * (1 - currentPropellantEfficiency) * Current_propellant.WasteHeatMultiplier;
+            var efficiency = (1 - currentPropellantEfficiency) * Current_propellant.WasteHeatMultiplier;
 
-            var heatProduction = heatToProduce;
-            SyncVesselResourceManager.AddProcess(this, this,
+            request = SyncVesselResourceManager.AddProcess(this, this,
                 ConversionProcess.Builder()
                     .Module(this)
-                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, heatToProduce)
+                    .AddInputPerSecond(ResourceManager.FNRESOURCE_MEGAJOULES, maxThrottlePower)
+                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, maxThrottlePower * efficiency)
                     .Build());
+        }
+
+        public override void Notify(List<ConversionProcess> processes)
+        {
+            _electrical_consumption = CheatOptions.InfiniteElectricity
+                ? maxThrottlePower
+                : request != null ? request.GetConsumption(ResourceManager.FNRESOURCE_MEGAJOULES) : 0;
 
             // update GUI Values
-            _electrical_consumption_f = powerReceived;
-            _heat_production_f = heatProduction;
+            _heat_production_f = request != null ? request.GetProduction(ResourceManager.FNRESOURCE_WASTEHEAT) : 0;
 
             var effectiveIsp = _modifiedCurrentPropellantIspMultiplier * _modifiedEngineBaseIsp * ThrottleModifiedIsp();
 
-            var maxThrustInSpace = currentPropellantEfficiency * CurrentPropellantThrustMultiplier * ModifiedThrotte * GetPowerThrustModifier() * powerReceived / (effectiveIsp * PluginHelper.GravityConstant);
+            var maxThrustInSpace = CurrentPropellantEfficiency * CurrentPropellantThrustMultiplier * ModifiedThrotte * GetPowerThrustModifier() * _electrical_consumption / (effectiveIsp * PluginHelper.GravityConstant);
 
             _maxIsp = _modifiedEngineBaseIsp * _modifiedCurrentPropellantIspMultiplier * CurrentPropellantThrustMultiplier * ThrottleModifiedIsp();
             _maxFuelFlowRate = _maxIsp <= 0 ? 0 : maxThrustInSpace / _maxIsp / PluginHelper.GravityConstant;
@@ -501,7 +487,7 @@ namespace FNPlugin
                 }
 
                 if (_attachedEngine is ModuleEnginesFX)
-                    this.part.Effect(Current_propellant.ParticleFXName, Mathf.Min((float)Math.Pow(_electrical_consumption_f / maxEffectivePower, 0.5), _attachedEngine.finalThrust / _attachedEngine.maxThrust), -1);
+                    this.part.Effect(Current_propellant.ParticleFXName, Mathf.Min((float)Math.Pow(_electrical_consumption / maxEffectivePower, 0.5), _attachedEngine.finalThrust / _attachedEngine.maxThrust), -1);
             }
             else if (this.vessel.packed && _attachedEngine.enabled && FlightGlobals.ActiveVessel == vessel && throttle > 0 && _initializationCountdown == 0)
             {
@@ -532,8 +518,9 @@ namespace FNPlugin
             var vacuumPlasmaResource = part.Resources[InterstellarResourcesConfiguration.Instance.VacuumPlasma];
             if (isupgraded && vacuumPlasmaResource != null)
             {
-                part.RequestResource(InterstellarResourcesConfiguration.Instance.VacuumPlasma, - vacuumPlasmaResource.maxAmount);
+                part.RequestResource(InterstellarResourcesConfiguration.Instance.VacuumPlasma, -vacuumPlasmaResource.maxAmount);
             }
+
         }
 
         private static bool IsValidPositiveNumber(double value)

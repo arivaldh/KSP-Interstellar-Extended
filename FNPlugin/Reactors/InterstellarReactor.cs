@@ -455,6 +455,8 @@ namespace FNPlugin.Reactors
         bool isFixedUpdatedCalled;
         bool render_window = false;
 
+        ConversionProcess request;
+
         public ReactorFuelType CurrentFuelMode
         {
             get { return current_fuel_mode; }
@@ -1395,9 +1397,7 @@ namespace FNPlugin.Reactors
 
             decay_ongoing = false;
 
-            var maximumPower = MaximumPower;
-
-            if (IsEnabled && maximumPower > 0)
+            if (IsEnabled && MaximumPower > 0)
             {
                 if (ReactorIsOverheating())
                 {
@@ -1408,7 +1408,7 @@ namespace FNPlugin.Reactors
                     return;
                 }
 
-                max_power_to_supply = Math.Max(maximumPower * timeWarpFixedDeltaTime, 0);
+                max_power_to_supply = Math.Max(MaximumPower * timeWarpFixedDeltaTime, 0);
 
                 if (hasBuoyancyEffects && !CheatOptions.UnbreakableJoints)
                 {
@@ -1464,7 +1464,7 @@ namespace FNPlugin.Reactors
                 power_request_ratio = Math.Max(Math.Max(thermalThrottleRatio, chargedThrottleRatio), Math.Max(storedGeneratorThermalEnergyRequestRatio, storedGeneratorChargedEnergyRequestRatio));
 
                 var safetyThrotleModifier = GetSafetyOverheatPreventionRatio();
-                max_charged_to_supply_per_second = maximumChargedPower * stored_fuel_ratio * geeForceModifier * safetyThrotleModifier * power_access_modifier;
+                max_charged_to_supply_per_second = maximumChargedPower * geeForceModifier * safetyThrotleModifier;
                 requested_charged_to_supply_per_second = max_charged_to_supply_per_second * power_request_ratio * maximum_charged_request_ratio;
 
                 var chargedParticlesManager = getManagerForVessel(ResourceManager.FNRESOURCE_CHARGED_PARTICLES);
@@ -1474,7 +1474,7 @@ namespace FNPlugin.Reactors
                 var neededChargedPowerPerSecond = getNeededPowerSupplyPerSecondWithMinimumRatio(max_charged_to_supply_per_second, min_throttle, ResourceManager.FNRESOURCE_CHARGED_PARTICLES, chargedParticlesManager);
                 charged_power_ratio = Math.Min(maximum_charged_request_ratio, maximumChargedPower > 0 ? neededChargedPowerPerSecond / maximumChargedPower : 0);
                          
-                max_thermal_to_supply_per_second = maximumThermalPower * stored_fuel_ratio * geeForceModifier * safetyThrotleModifier * power_access_modifier;
+                max_thermal_to_supply_per_second = maximumThermalPower * geeForceModifier * safetyThrotleModifier;
                 requested_thermal_to_supply_per_second = max_thermal_to_supply_per_second * power_request_ratio * maximum_thermal_request_ratio;
 
                 var neededThermalPowerPerSecond = getNeededPowerSupplyPerSecondWithMinimumRatio(max_thermal_to_supply_per_second, min_throttle, ResourceManager.FNRESOURCE_THERMALPOWER, thermalHeatManager);
@@ -1483,47 +1483,12 @@ namespace FNPlugin.Reactors
                 var speedDivider = reactorSpeedMult > 0 ? 20 / reactorSpeedMult : 20;
                 reactor_power_ratio = Math.Min(maximum_reactor_request_ratio, (maximum_reactor_request_ratio + Math.Min(maximum_reactor_request_ratio, Math.Max(charged_power_ratio, thermal_power_ratio)) * speedDivider) / (speedDivider + 1));
 
-                ongoing_charged_power_generated = managedProvidedPowerSupplyPerSecondMinimumRatio(requested_charged_to_supply_per_second, max_charged_to_supply_per_second, reactor_power_ratio, ResourceManager.FNRESOURCE_CHARGED_PARTICLES, chargedParticlesManager);
-                ongoing_thermal_power_generated = managedProvidedPowerSupplyPerSecondMinimumRatio(requested_thermal_to_supply_per_second, max_thermal_to_supply_per_second, reactor_power_ratio, ResourceManager.FNRESOURCE_THERMALPOWER, thermalHeatManager);
-                ongoing_total_power_generated = ongoing_thermal_power_generated + ongoing_charged_power_generated;
-
-                var totalPowerReceivedFixed = ongoing_total_power_generated * timeWarpFixedDeltaTime;
-
-                if (!CheatOptions.UnbreakableJoints && CurrentFuelMode.NeutronsRatio > 0 && CurrentFuelMode.NeutronsRatio > 0)
-                    neutronEmbrittlementDamage += ongoing_total_power_generated * timeWarpFixedDeltaTime * CurrentFuelMode.NeutronsRatio / neutronEmbrittlementDivider;
-
-                SyncVesselResourceManager.AddProcess(this, this,
+                request = SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
                         .Module(this)
-                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, ongoing_total_power_generated, true)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, max_charged_to_supply_per_second)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_THERMALPOWER, max_thermal_to_supply_per_second)
                         .Build());
-
-                ongoing_consumption_rate = ongoing_total_power_generated / maximumPower; 
-
-                PluginHelper.SetAnimationRatio((float)Math.Pow(ongoing_consumption_rate, 4), pulseAnimation);
-
-                powerPcnt = 100 * ongoing_consumption_rate;
-
-                // consume fuel
-                if (!CheatOptions.InfinitePropellant)
-                {
-                    foreach (ReactorFuel fuel in current_fuel_variant.ReactorFuels)
-                    {
-                        ConsumeReactorFuel(fuel, totalPowerReceivedFixed / geeForceModifier);
-                    }
-
-                    // refresh production list
-                    reactorProduction.Clear();
-
-                    // produce reactor products
-                    foreach (ReactorProduct product in current_fuel_variant.ReactorProducts)
-                    {
-                        var massProduced = ProduceReactorProduct(product, totalPowerReceivedFixed / geeForceModifier);
-                        reactorProduction.Add(new ReactorProduction() { fuelmode = product, mass = massProduced });
-                    }
-                }
-
-                BreedTritium(ongoing_thermal_power_generated, timeWarpFixedDeltaTime);
 
                 if (Planetarium.GetUniversalTime() != 0)
                     last_active_time = Planetarium.GetUniversalTime();
@@ -1552,10 +1517,47 @@ namespace FNPlugin.Reactors
             if (IsEnabled) return;
 
             resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_THERMALPOWER, 0);
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, 0);
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateBuffers();
+        }
+
+        public override void Notify(List<ConversionProcess> processes)
+        {
+            ongoing_charged_power_generated = request.GetProduction(ResourceManager.FNRESOURCE_CHARGED_PARTICLES);
+            ongoing_thermal_power_generated = request.GetProduction(ResourceManager.FNRESOURCE_THERMALPOWER);
+            ongoing_total_power_generated = ongoing_thermal_power_generated + ongoing_charged_power_generated;
+
+            var totalPowerReceivedFixed = ongoing_total_power_generated * timeWarpFixedDeltaTime;
+
+            if (!CheatOptions.UnbreakableJoints && CurrentFuelMode.NeutronsRatio > 0 && CurrentFuelMode.NeutronsRatio > 0)
+                neutronEmbrittlementDamage += ongoing_total_power_generated * timeWarpFixedDeltaTime * CurrentFuelMode.NeutronsRatio / neutronEmbrittlementDivider;
+
+            ongoing_consumption_rate = ongoing_total_power_generated / MaximumPower;
+
+            PluginHelper.SetAnimationRatio((float)Math.Pow(ongoing_consumption_rate, 4), pulseAnimation);
+
+            powerPcnt = 100 * ongoing_consumption_rate;
+
+            // consume fuel
+            if (!CheatOptions.InfinitePropellant)
+            {
+                foreach (ReactorFuel fuel in current_fuel_variant.ReactorFuels)
+                {
+                    ConsumeReactorFuel(fuel, totalPowerReceivedFixed / geeForceModifier);
+                }
+
+                // refresh production list
+                reactorProduction.Clear();
+
+                // produce reactor products
+                foreach (ReactorProduct product in current_fuel_variant.ReactorProducts)
+                {
+                    var massProduced = ProduceReactorProduct(product, totalPowerReceivedFixed / geeForceModifier);
+                    reactorProduction.Add(new ReactorProduction() { fuelmode = product, mass = massProduced });
+                }
+            }
+
+            BreedTritium(ongoing_thermal_power_generated, timeWarpFixedDeltaTime);
+
         }
 
         private void LookForAlternativeFuelTypes()
