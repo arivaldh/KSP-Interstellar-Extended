@@ -13,6 +13,11 @@ namespace FNPlugin
         {
         }
 
+        public void OnDestroy()
+        {
+            SyncVesselResourceManager.CleanAll();
+        }
+
         public void Update()
         {
             if (Input.GetKeyDown(KeyCode.F2))

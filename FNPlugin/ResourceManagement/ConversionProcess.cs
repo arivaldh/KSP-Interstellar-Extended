@@ -162,6 +162,42 @@ namespace FNPlugin
             max /= TimeWarp.fixedDeltaTime;
         }
 
+        public double GetProduction(string resourceName)
+        {
+            return GetProduction(PartResourceLibrary.Instance.GetDefinition(resourceName).id);
+        }
+
+        public double GetProduction(int resourceId)
+        {
+            double production = 0;
+            foreach (Entry entry in outputs)
+            {
+                if (entry.ResourceId == resourceId)
+                {
+                    production += entry.Amount * (1 - FractionToProcess);
+                }
+            }
+            return production;
+        }
+
+        public double GetConsumption(string resourceName)
+        {
+            return GetConsumption(PartResourceLibrary.Instance.GetDefinition(resourceName).id);
+        }
+
+        public double GetConsumption(int resourceId)
+        {
+            double consumption = 0;
+            foreach (Entry entry in inputs)
+            {
+                if (entry.ResourceId == resourceId)
+                {
+                    consumption += entry.Amount * (1 - FractionToProcess);
+                }
+            }
+            return consumption;
+        }
+
         public bool Run(SyncVesselResourceManager manager)
         {
             if (FractionToProcess < Double.Epsilon) return false;

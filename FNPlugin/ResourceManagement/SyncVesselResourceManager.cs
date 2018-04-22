@@ -77,6 +77,11 @@ namespace FNPlugin
             }
         }
 
+        public static void CleanAll()
+        {
+            vesselManagers.Clear();
+        }
+
         public static void RegisterRadiator(FNRadiator radiator)
         {
             ResourceSnapshot snapshot = SyncVesselResourceManager.GetSyncVesselResourceManager(radiator.vessel).GetResourceSnapshot(ResourceManager.FNRESOURCE_WASTEHEAT);
@@ -109,10 +114,11 @@ namespace FNPlugin
             return snapshot;
         }
 
-        public static void AddProcess(PartModule module, ISyncResourceModule callback, ConversionProcess process)
+        public static ConversionProcess AddProcess(PartModule module, ISyncResourceModule callback, ConversionProcess process)
         {
             SyncVesselResourceManager manager = GetSyncVesselResourceManager(module.vessel);
             manager.InsertConversionProcess(callback, process);
+            return process;
         }
 
         protected void InsertConversionProcess(ISyncResourceModule callback, ConversionProcess process)
@@ -392,7 +398,7 @@ namespace FNPlugin
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Current Distribution", leftBoldLabel, GUILayout.ExpandWidth(true));
-            GUILayout.Label((production / maxProduction).ToString("0.000") + "%", rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
+            GUILayout.Label((100 * production / maxProduction).ToString("0.000") + "%", rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
