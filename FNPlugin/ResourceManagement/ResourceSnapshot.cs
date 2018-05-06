@@ -42,7 +42,7 @@ namespace FNPlugin
             this.vessel = vessel;
             this.resourceId = resourceId;
             this.resourceName = resourceName;
-            Reinitialize();
+            ReInitialize();
         }
 
         public void Produce(double amount)
@@ -60,7 +60,7 @@ namespace FNPlugin
             return maxAmount > Double.Epsilon ? (CurrentAmount / maxAmount) : 0.0d;
         }
 
-        protected virtual void Reinitialize()
+        protected virtual void ReInitialize()
         {
             changedAmount = 0;
             vessel.GetConnectedResourceTotals(resourceId, out this.storedAmount, out this.maxAmount);
@@ -80,7 +80,7 @@ namespace FNPlugin
             if (Math.Abs(changedAmount) > Double.Epsilon)
                 RequestResource();
 
-            Reinitialize();
+            ReInitialize();
         }
 
         protected virtual void RequestResource()
@@ -171,17 +171,64 @@ namespace FNPlugin
         }
     }
 
-    public class PTPSnapshot : ResourceSnapshot
+    public class PtpSnapshot : ResourceSnapshot
     {
-        public PTPSnapshot(Vessel vessel, int resourceId)
-            : this(vessel, resourceId, PartResourceLibrary.Instance.GetDefinition(resourceId).name) { }
+        private readonly ISyncResourceModule producer;
+        private readonly List<ISyncResourceModule> consumers;
 
-        public PTPSnapshot(Vessel vessel, string resourceName)
-            : this(vessel, PartResourceLibrary.Instance.GetDefinition(resourceName).id, resourceName) { }
+        public PtpSnapshot(ISyncResourceModule producer, Vessel vessel, int resourceId)
+            : this(producer, vessel, resourceId, PartResourceLibrary.Instance.GetDefinition(resourceId).name) { }
 
-        public PTPSnapshot(Vessel vessel, int resourceId, string resourceName) : base(vessel, resourceId, resourceName)
+        public PtpSnapshot(ISyncResourceModule producer, Vessel vessel, string resourceName)
+            : this(producer, vessel, PartResourceLibrary.Instance.GetDefinition(resourceName).id, resourceName) { }
+
+        public PtpSnapshot(ISyncResourceModule producer, Vessel vessel, int resourceId, string resourceName)
+            : base(vessel, resourceId, resourceName)
         {
+            this.producer = producer;
+            this.consumers = new List<ISyncResourceModule>();
+        }
 
+        protected override void ReInitialize()
+        {
+            this.changedAmount = 0;
+            this.storedAmount = 0;
+            this.maxAmount = 0;
+        }
+
+        public bool ForModule(ISyncResourceModule module)
+        {
+            return (module == producer) || consumers.Contains(module);
+        }
+
+        public void AddConsumer(ISyncResourceModule consumer)
+        {
+            this.consumers.Add(consumer);
+        }
+
+        public virtual void RegisterMaxProduction(double maxProduction)
+        {
+            this.storedAmount = maxProduction;
+            this.maxAmount = maxProduction;
+        }
+
+        public override void Commit()
+        {
+            if (storedAmount != maxAmount)
+            {
+                Debug.LogError(String.Format("Point-To-Point snapshot between {0} and {1}",
+                    producer.GetResourceManagerDisplayName(), ConsumersToString()));
+                Debug.LogError(String.Format("Point-To-Point Resource {0}, was not replenished! storedAmount = {1}, maxAmount = {2}",
+                    resourceName, storedAmount, maxAmount));
+            }
+            ReInitialize();
+        }
+
+        private String ConsumersToString()
+        {
+            List<string> names = new List<string>(consumers.Count);
+            consumers.ForEach(consumer => names.Add(consumer.GetResourceManagerDisplayName()));
+            return String.Join(", ", names.ToArray());
         }
     }
 }

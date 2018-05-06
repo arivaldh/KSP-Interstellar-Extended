@@ -436,16 +436,15 @@ namespace FNPlugin
             _electrical_share_f = sumOfAllEffectivePower > 0 ? maxEffectivePower / sumOfAllEffectivePower : 1;
 
             maxThrottlePower = maxEffectivePower * ModifiedThrotte;
-            var currentPropellantEfficiency = CurrentPropellantEfficiency;
 
             // produce waste heat
-            var efficiency = (1 - currentPropellantEfficiency) * Current_propellant.WasteHeatMultiplier;
+            var wasteHeatRatio = (1 - CurrentPropellantEfficiency) * Current_propellant.WasteHeatMultiplier;
 
             request = SyncVesselResourceManager.AddProcess(this, this,
                 ConversionProcess.Builder()
                     .Module(this)
                     .AddInputPerSecond(ResourceManager.FNRESOURCE_MEGAJOULES, maxThrottlePower)
-                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, maxThrottlePower * efficiency)
+                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, maxThrottlePower * wasteHeatRatio)
                     .Build());
         }
 
@@ -453,7 +452,7 @@ namespace FNPlugin
         {
             _electrical_consumption = CheatOptions.InfiniteElectricity
                 ? maxThrottlePower
-                : request != null ? request.GetConsumption(ResourceManager.FNRESOURCE_MEGAJOULES) : 0;
+                : request.GetConsumption(ResourceManager.FNRESOURCE_MEGAJOULES);
 
             // update GUI Values
             _heat_production_f = request != null ? request.GetProduction(ResourceManager.FNRESOURCE_WASTEHEAT) : 0;

@@ -455,7 +455,7 @@ namespace FNPlugin.Reactors
         bool isFixedUpdatedCalled;
         bool render_window = false;
 
-        ConversionProcess request;
+        ConversionProcess productionRequest;
 
         public ReactorFuelType CurrentFuelMode
         {
@@ -1041,15 +1041,6 @@ namespace FNPlugin.Reactors
             powerPercentageFloatRange[0].minValue = minimumPowerPercentage;
             powerPercentageFloatRange[1].minValue = minimumPowerPercentage;
 
-            if (!part.Resources.Contains(ResourceManager.FNRESOURCE_THERMALPOWER))
-            {
-                var node = new ConfigNode("RESOURCE");
-                node.AddValue("name", ResourceManager.FNRESOURCE_THERMALPOWER);
-                node.AddValue("maxAmount", PowerOutput);
-                node.AddValue("amount", 0);
-                part.AddResource(node);
-            }
-
             // while in edit mode, listen to on attach/detach event
             if (state == StartState.Editor)
             {
@@ -1057,12 +1048,7 @@ namespace FNPlugin.Reactors
                 part.OnEditorDetach += OnEditorDetach;
             }
 
-            String[] resources_to_supply = { ResourceManager.FNRESOURCE_THERMALPOWER, ResourceManager.FNRESOURCE_CHARGED_PARTICLES, ResourceManager.FNRESOURCE_MEGAJOULES };
-            this.resources_to_supply = resources_to_supply;
-
             resourceBuffers = new ResourceBuffers();
-            resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_THERMALPOWER, 4));
-            resourceBuffers.AddConfiguration(new ResourceBuffers.TimeBasedConfig(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, 4));
             resourceBuffers.Init(this.part);
             resourceBuffers.AddWasteHeatBuffer(wasteHeatMultiplier, 1.0e+5, true);
 
@@ -1435,59 +1421,24 @@ namespace FNPlugin.Reactors
                     var message = Localizer.Format("#LOC_KSPIE_Reactor_ranOutOfFuelFor") + " " + CurrentFuelMode.ModeGUIName;
                     Debug.Log("[KSPI] - " + message);
                     ScreenMessages.PostScreenMessage(message, 20.0f, ScreenMessageStyle.UPPER_CENTER);
+                    return;
                 }
              
-                thermalThrottleRatio = connectedEngines.Any(m => !m.RequiresChargedPower) ? connectedEngines.Where(m => !m.RequiresChargedPower).Max(e => e.CurrentThrottle) : 0;
-                chargedThrottleRatio = connectedEngines.Any(m => m.RequiresChargedPower) ? connectedEngines.Where(m => m.RequiresChargedPower).Max(e => e.CurrentThrottle) : 0;
-
-                var thermal_propulsion_ratio = thermalPropulsionEfficiency * thermalThrottleRatio;
-                var charged_propulsion_ratio = chargedParticlePropulsionEfficiency * chargedThrottleRatio;
-                var thermal_generator_ratio = thermalEnergyEfficiency * storedGeneratorThermalEnergyRequestRatio;
-                var charged_generator_ratio = chargedParticleEnergyEfficiency * storedGeneratorChargedEnergyRequestRatio;
-
-                maximum_thermal_request_ratio = Math.Min(thermal_propulsion_ratio + thermal_generator_ratio, 1);
-                maximum_charged_request_ratio = Math.Min(charged_propulsion_ratio + charged_generator_ratio, 1);
-                maximum_reactor_request_ratio = Math.Max(maximum_thermal_request_ratio, maximum_charged_request_ratio);
-
-                var power_access_modifier = Math.Max(
-                    Math.Max(
-                        connectedEngines.Any(m => !m.RequiresChargedPower) ? 1 : 0,
-                        connectedEngines.Any(m => m.RequiresChargedPower) ? 1 : 0),
-                   Math.Max(
-                        storedIsThermalEnergyGeneratorEfficiency > 0 ? 1 : 0,
-                        storedIsChargedEnergyGeneratorEfficiency > 0 ? 1 : 0
-                   ));
-
-                var maximumChargedPower = MaximumChargedPower;
-                var maximumThermalPower = MaximumThermalPower;
-
-                power_request_ratio = Math.Max(Math.Max(thermalThrottleRatio, chargedThrottleRatio), Math.Max(storedGeneratorThermalEnergyRequestRatio, storedGeneratorChargedEnergyRequestRatio));
-
                 var safetyThrotleModifier = GetSafetyOverheatPreventionRatio();
-                max_charged_to_supply_per_second = maximumChargedPower * geeForceModifier * safetyThrotleModifier;
-                requested_charged_to_supply_per_second = max_charged_to_supply_per_second * power_request_ratio * maximum_charged_request_ratio;
+                max_charged_to_supply_per_second = MaximumChargedPower * geeForceModifier * safetyThrotleModifier;
+                max_thermal_to_supply_per_second = MaximumThermalPower * geeForceModifier * safetyThrotleModifier;
 
-                var chargedParticlesManager = getManagerForVessel(ResourceManager.FNRESOURCE_CHARGED_PARTICLES);
-                var thermalHeatManager = getManagerForVessel(ResourceManager.FNRESOURCE_THERMALPOWER);
+                SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(this.vessel);
+                PtpSnapshot chargedSnapshot = manager.GetResourceSnapshot(this, ResourceManager.FNRESOURCE_CHARGED_PARTICLES) as PtpSnapshot;
+                PtpSnapshot thermalSnapshot = manager.GetResourceSnapshot(this, ResourceManager.FNRESOURCE_THERMALPOWER) as PtpSnapshot;
+                chargedSnapshot.RegisterMaxProduction(max_charged_to_supply_per_second);
+                thermalSnapshot.RegisterMaxProduction(max_thermal_to_supply_per_second);
 
-                min_throttle = stored_fuel_ratio > 0 ? MinimumThrottle / stored_fuel_ratio : 1;
-                var neededChargedPowerPerSecond = getNeededPowerSupplyPerSecondWithMinimumRatio(max_charged_to_supply_per_second, min_throttle, ResourceManager.FNRESOURCE_CHARGED_PARTICLES, chargedParticlesManager);
-                charged_power_ratio = Math.Min(maximum_charged_request_ratio, maximumChargedPower > 0 ? neededChargedPowerPerSecond / maximumChargedPower : 0);
-                         
-                max_thermal_to_supply_per_second = maximumThermalPower * geeForceModifier * safetyThrotleModifier;
-                requested_thermal_to_supply_per_second = max_thermal_to_supply_per_second * power_request_ratio * maximum_thermal_request_ratio;
-
-                var neededThermalPowerPerSecond = getNeededPowerSupplyPerSecondWithMinimumRatio(max_thermal_to_supply_per_second, min_throttle, ResourceManager.FNRESOURCE_THERMALPOWER, thermalHeatManager);
-                thermal_power_ratio = Math.Min(maximum_thermal_request_ratio, maximumThermalPower > 0 ? neededThermalPowerPerSecond / maximumThermalPower : 0);
-
-                var speedDivider = reactorSpeedMult > 0 ? 20 / reactorSpeedMult : 20;
-                reactor_power_ratio = Math.Min(maximum_reactor_request_ratio, (maximum_reactor_request_ratio + Math.Min(maximum_reactor_request_ratio, Math.Max(charged_power_ratio, thermal_power_ratio)) * speedDivider) / (speedDivider + 1));
-
-                request = SyncVesselResourceManager.AddProcess(this, this,
+                productionRequest = SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
                         .Module(this)
-                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, max_charged_to_supply_per_second)
-                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_THERMALPOWER, max_thermal_to_supply_per_second)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_THERMALPOWER, max_thermal_to_supply_per_second, false, true)
+                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, max_charged_to_supply_per_second, false, true)
                         .Build());
 
                 if (Planetarium.GetUniversalTime() != 0)
@@ -1514,16 +1465,17 @@ namespace FNPlugin.Reactors
                 powerPcnt = 0;
             }
 
-            if (IsEnabled) return;
-
             resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateBuffers();
+
+            if (IsEnabled) return;
         }
 
         public override void Notify(List<ConversionProcess> processes)
         {
-            ongoing_charged_power_generated = request.GetProduction(ResourceManager.FNRESOURCE_CHARGED_PARTICLES);
-            ongoing_thermal_power_generated = request.GetProduction(ResourceManager.FNRESOURCE_THERMALPOWER);
+            ongoing_charged_power_generated = productionRequest.GetProduction(ResourceManager.FNRESOURCE_CHARGED_PARTICLES);
+            ongoing_thermal_power_generated = productionRequest.GetProduction(ResourceManager.FNRESOURCE_THERMALPOWER);
+
             ongoing_total_power_generated = ongoing_thermal_power_generated + ongoing_charged_power_generated;
 
             var totalPowerReceivedFixed = ongoing_total_power_generated * timeWarpFixedDeltaTime;
@@ -1626,9 +1578,6 @@ namespace FNPlugin.Reactors
 
         private void UpdateCapacities()
         {
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_THERMALPOWER, MaximumThermalPower);
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, MaximumChargedPower);
             resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
             resourceBuffers.UpdateBuffers();
         }

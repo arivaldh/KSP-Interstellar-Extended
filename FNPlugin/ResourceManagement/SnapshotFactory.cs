@@ -9,15 +9,10 @@ namespace FNPlugin
     {
         public static ResourceSnapshot GetNewSnapshot(Vessel vessel, int resourceId)
         {
-            return GetNewSnapshot(vessel, PartResourceLibrary.Instance.GetDefinition(resourceId).name, resourceId);
+            return GetNewSnapshot(vessel, resourceId, PartResourceLibrary.Instance.GetDefinition(resourceId).name);
         }
 
-        public static ResourceSnapshot GetNewSnapshot(Vessel vessel, String resourceName)
-        {
-            return GetNewSnapshot(vessel, resourceName, PartResourceLibrary.Instance.GetDefinition(resourceName).id);
-        }
-
-        public static ResourceSnapshot GetNewSnapshot(Vessel vessel, String resourceName, int resourceId)
+        public static ResourceSnapshot GetNewSnapshot(Vessel vessel, int resourceId, String resourceName)
         {
             // Waste Heat is quite special. It can oscillate near equilibrium. Low oscillations with low timewarp,
             // too high oscillations with high timewarp.
@@ -25,16 +20,21 @@ namespace FNPlugin
             {
                 return new WasteHeatSnapshot(vessel, resourceId, resourceName);
             }
-            // Thermal Power and Charged Particles are always distributed Point-to-Point
-            //else if (resourceName.Equals(ResourceManager.FNRESOURCE_THERMALPOWER) ||
-            //         resourceName.Equals(ResourceManager.FNRESOURCE_CHARGED_PARTICLES))
-            //{
-            //    return new PTPSnapshot(vessel, resourceId, resourceName);
-            //}
             else
             {
                 return new ResourceSnapshot(vessel, resourceId, resourceName);
             }
+        }
+
+        public static PtpSnapshot GetNewPtpSnapshot(ISyncResourceModule producer, Vessel vessel, int resourceId)
+        {
+            return GetNewPtpSnapshot(producer, vessel, resourceId, PartResourceLibrary.Instance.GetDefinition(resourceId).name);
+        }
+
+
+        public static PtpSnapshot GetNewPtpSnapshot(ISyncResourceModule producer, Vessel vessel, int resourceId, string resourceName)
+        {
+            return new PtpSnapshot(producer, vessel, resourceId, resourceName);
         }
     }
 }

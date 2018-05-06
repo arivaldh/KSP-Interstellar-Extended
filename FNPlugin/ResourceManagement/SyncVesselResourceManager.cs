@@ -37,6 +37,7 @@ namespace FNPlugin
 
         private Vessel vessel;
         private Dictionary<ISyncResourceModule, List<ConversionProcess>> processes;
+        private Dictionary<int, Dictionary<ISyncResourceModule, PtpSnapshot>> ptpSnapshots;
         private Dictionary<int, ResourceSnapshot> snapshots;
 
         // FixedUpdate Synchronization results
@@ -64,6 +65,7 @@ namespace FNPlugin
             this.vessel = vessel;
             this.processes = new Dictionary<ISyncResourceModule, List<ConversionProcess>>();
             this.snapshots = new Dictionary<int, ResourceSnapshot>();
+            this.ptpSnapshots = new Dictionary<int, Dictionary<ISyncResourceModule, PtpSnapshot>>();
             this.windowPositions = new Dictionary<int, Rect>();
             this.windowIdToResourceId = new Dictionary<int, int>();
             this.resourceIdToWindowId = new Dictionary<int, int>();
@@ -84,7 +86,8 @@ namespace FNPlugin
 
         public static void RegisterRadiator(FNRadiator radiator)
         {
-            ResourceSnapshot snapshot = SyncVesselResourceManager.GetSyncVesselResourceManager(radiator.vessel).GetResourceSnapshot(ResourceManager.FNRESOURCE_WASTEHEAT);
+            SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(radiator.vessel);
+            ResourceSnapshot snapshot = manager.GetResourceSnapshot(ResourceManager.FNRESOURCE_WASTEHEAT);
             (snapshot as WasteHeatSnapshot).RegisterRadiator(radiator);
         }
 
@@ -101,17 +104,72 @@ namespace FNPlugin
             {
                 snapshot = SnapshotFactory.GetNewSnapshot(vessel, resourceId);
                 snapshots.Add(resourceId, snapshot);
-                if (ProduceGUI(resourceId))
-                {
-                    windowPositions.Add(resourceId, GetWindowPosition(resourceId));
-                    int windowId = GetWindowId(resourceId);
-                    windowIdToResourceId.Add(windowId, resourceId);
-                    resourceIdToWindowId.Add(resourceId, windowId);
-                    renderWindow.Add(resourceId, false);
-                }
+                createGUIElements(resourceId);
             }
 
             return snapshot;
+        }
+
+        public ResourceSnapshot GetResourceSnapshot(ISyncResourceModule module, string resourceName)
+        {
+            return GetResourceSnapshot(module, PartResourceLibrary.Instance.GetDefinition(resourceName).id);
+        }
+
+        public ResourceSnapshot GetResourceSnapshot(ISyncResourceModule module, int resourceId)
+        {
+            Dictionary<ISyncResourceModule, PtpSnapshot> resourceSnapshots;
+            if (ptpSnapshots.TryGetValue(resourceId, out resourceSnapshots))
+            {
+                foreach (PtpSnapshot snapshot in resourceSnapshots.Values)
+                {
+                    if (snapshot.ForModule(module))
+                    {
+                        return snapshot;
+                    }
+                }
+                return GetResourceSnapshot(resourceId);
+            }
+            else
+            {
+                return GetResourceSnapshot(resourceId);
+            }
+        }
+
+        public void RegisterPtpSnapshot(ISyncResourceModule producer, ISyncResourceModule consumer, string resourceName)
+        {
+            RegisterPtpSnapshot(producer, consumer, PartResourceLibrary.Instance.GetDefinition(resourceName).id);
+        }
+
+        public void RegisterPtpSnapshot(ISyncResourceModule producer, ISyncResourceModule consumer, int resourceId)
+        {
+            Dictionary<ISyncResourceModule, PtpSnapshot> resourceSnapshots;
+            if (!ptpSnapshots.TryGetValue(resourceId, out resourceSnapshots))
+            {
+                resourceSnapshots = new Dictionary<ISyncResourceModule, PtpSnapshot>();
+                createGUIElements(resourceId);
+                ptpSnapshots.Add(resourceId, resourceSnapshots);
+            }
+
+            PtpSnapshot ptpSnapshot;
+            if (!resourceSnapshots.TryGetValue(producer, out ptpSnapshot))
+            {
+                ptpSnapshot = new PtpSnapshot(producer, vessel, resourceId);
+                resourceSnapshots.Add(producer, ptpSnapshot);
+            }
+
+            ptpSnapshot.AddConsumer(consumer);
+        }
+
+        private void createGUIElements(int resourceId)
+        {
+            if (ProduceGUI(resourceId) && !windowPositions.ContainsKey(resourceId))
+            {
+                windowPositions.Add(resourceId, GetWindowPosition(resourceId));
+                int windowId = GetWindowId(resourceId);
+                windowIdToResourceId.Add(windowId, resourceId);
+                resourceIdToWindowId.Add(resourceId, windowId);
+                renderWindow.Add(resourceId, false);
+            }
         }
 
         public static ConversionProcess AddProcess(PartModule module, ISyncResourceModule callback, ConversionProcess process)
@@ -135,6 +193,15 @@ namespace FNPlugin
 
         public void Synchronize()
         {
+            RunAllProcesses();
+            AggregateProductionsConsumptions();
+            CommitSnapshots();
+            NotifyAllModules();
+            processes.Clear();
+        }
+
+        private void RunAllProcesses()
+        {
             bool ranOK;
             do
             {
@@ -147,10 +214,17 @@ namespace FNPlugin
                     }
                 }
             } while (ranOK);
+        }
 
+        private void AggregateProductionsConsumptions()
+        {
             productions.Clear();
             consumptions.Clear();
-            foreach (int resourceId in snapshots.Keys)
+
+            HashSet<int> resourceIds = new HashSet<int>(snapshots.Keys);
+            resourceIds.UnionWith(ptpSnapshots.Keys);
+
+            foreach (int resourceId in resourceIds)
             {
                 if (renderWindow[resourceId])
                 {
@@ -158,18 +232,30 @@ namespace FNPlugin
                     consumptions.Add(resourceId, GetConsumptionPerSecond(resourceId));
                 }
             }
+        }
 
+        private void CommitSnapshots()
+        {
             foreach (ResourceSnapshot snapshot in snapshots.Values)
             {
                 snapshot.Commit();
             }
 
+            foreach (Dictionary<ISyncResourceModule, PtpSnapshot> snapshots in ptpSnapshots.Values)
+            {
+                foreach (PtpSnapshot snapshot in snapshots.Values)
+                {
+                    snapshot.Commit();
+                }
+            }
+        }
+
+        private void NotifyAllModules()
+        {
             foreach (ISyncResourceModule module in processes.Keys)
             {
                 module.Notify(processes[module]);
             }
-
-            processes.Clear();
         }
 
         private Dictionary<string, ProductionConsumption> GetProductionPerSecond(int resourceId)
@@ -179,7 +265,7 @@ namespace FNPlugin
             {
                 foreach (ConversionProcess process in processesList)
                 {
-                    string name = process.module.GetResourceManagerDisplayName();
+                    string name = process.Module.GetResourceManagerDisplayName();
                     double current;
                     double max;
                     process.GetProductionPerSecond(resourceId, out current, out max);
@@ -207,7 +293,7 @@ namespace FNPlugin
             {
                 foreach (ConversionProcess process in processesList)
                 {
-                    string name = process.module.GetResourceManagerDisplayName();
+                    string name = process.Module.GetResourceManagerDisplayName();
                     double current;
                     double max;
                     process.GetConsumptionPerSecond(resourceId, out current, out max);
@@ -298,7 +384,9 @@ namespace FNPlugin
         {
             if (vessel == FlightGlobals.ActiveVessel)
             {
-                foreach (int resourceId in snapshots.Keys)
+                HashSet<int> resourceIds = new HashSet<int>(snapshots.Keys);
+                resourceIds.UnionWith(ptpSnapshots.Keys);
+                foreach (int resourceId in resourceIds)
                 {
                     if (renderWindow.ContainsKey(resourceId) && renderWindow[resourceId])
                     {
@@ -372,18 +460,24 @@ namespace FNPlugin
 
             double production = 0;
             double maxProduction = 0;
-            foreach (ProductionConsumption entry in productions[resourceId].Values)
+            if (productions.ContainsKey(resourceId))
             {
-                production += entry.Current;
-                maxProduction += entry.Max;
+                foreach (ProductionConsumption entry in productions[resourceId].Values)
+                {
+                    production += entry.Current;
+                    maxProduction += entry.Max;
+                }
             }
 
             double consumption = 0;
             double maxConsumption = 0;
-            foreach (ProductionConsumption entry in consumptions[resourceId].Values)
+            if (consumptions.ContainsKey(resourceId))
             {
-                consumption += entry.Current;
-                maxConsumption += entry.Max;
+                foreach (ProductionConsumption entry in consumptions[resourceId].Values)
+                {
+                    consumption += entry.Current;
+                    maxConsumption += entry.Max;
+                }
             }
 
             GUILayout.BeginHorizontal();
@@ -413,13 +507,16 @@ namespace FNPlugin
             GUILayout.Label("Max", rightBoldLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
             GUILayout.EndHorizontal();
 
-            foreach (var entry in productions[resourceId].OrderByDescending(entry => entry.Value.Current))
+            if (productions.ContainsKey(resourceId))
             {
-                GUILayout.BeginHorizontal();
-                GUILayout.Label(entry.Key, leftAlignedLabel, GUILayout.ExpandWidth(true));
-                GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Current), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
-                GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Max), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
-                GUILayout.EndHorizontal();
+                foreach (var entry in productions[resourceId].OrderByDescending(entry => entry.Value.Current))
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(entry.Key, leftAlignedLabel, GUILayout.ExpandWidth(true));
+                    GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Current), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
+                    GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Max), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
+                    GUILayout.EndHorizontal();
+                }
             }
 
             GUILayout.Space(5);
@@ -430,13 +527,16 @@ namespace FNPlugin
             //GUILayout.Label("Rank", right_bold_label, GUILayout.ExpandWidth(false), GUILayout.MinWidth(priorityWidth));
             GUILayout.EndHorizontal();
 
-            foreach (var entry in consumptions[resourceId].OrderByDescending(entry => entry.Value.Current))
+            if (consumptions.ContainsKey(resourceId))
             {
-                GUILayout.BeginHorizontal();
-                GUILayout.Label(entry.Key, leftAlignedLabel, GUILayout.ExpandWidth(true));
-                GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Current), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
-                GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Max), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
-                GUILayout.EndHorizontal();
+                foreach (var entry in consumptions[resourceId].OrderByDescending(entry => entry.Value.Current))
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(entry.Key, leftAlignedLabel, GUILayout.ExpandWidth(true));
+                    GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Current), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
+                    GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Max), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
+                    GUILayout.EndHorizontal();
+                }
             }
 
             //if (resourceName == ResourceManager.FNRESOURCE_MEGAJOULES)

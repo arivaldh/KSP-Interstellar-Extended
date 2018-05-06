@@ -554,9 +554,18 @@ namespace FNPlugin
         {
             //connect with source
             if (chargedParticleMode)
+            {
+                SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(this.vessel);
+                manager.RegisterPtpSnapshot(attachedPowerSource as ISyncResourceModule, this, ResourceManager.FNRESOURCE_CHARGED_PARTICLES);
                 attachedPowerSource.ConnectedChargedParticleElectricGenerator = this;
+            }
             else
+            {
+                SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(this.vessel);
+                manager.RegisterPtpSnapshot(attachedPowerSource as ISyncResourceModule, this, ResourceManager.FNRESOURCE_CHARGED_PARTICLES);
+                manager.RegisterPtpSnapshot(attachedPowerSource as ISyncResourceModule, this, ResourceManager.FNRESOURCE_THERMALPOWER);
                 attachedPowerSource.ConnectedThermalElectricGenerator = this;
+            }
 
             UpdateTargetMass();
         }
@@ -835,7 +844,7 @@ namespace FNPlugin
                     }
                     if (attachedPowerSource.ChargedPowerRatio != 0)
                     {
-                        attachedPowerSource.NotifyActiveChargedEnergyGenerator(_totalEff, 1);
+                        attachedPowerSource.NotifyActiveChargedEnergyGenerator( _totalEff, 1);
                         SyncVesselResourceManager.AddProcess(this, this,
                             ConversionProcess.Builder()
                                 .Module(this)
