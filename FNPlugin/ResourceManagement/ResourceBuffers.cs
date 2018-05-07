@@ -219,7 +219,8 @@ namespace FNPlugin.Extensions
 
         public void AddWasteHeatBuffer(double wasteHeatMultiplier, double unitsPerMassUnit, bool preventOverheat = false)
         {
-            ResourceBuffers.TimeBasedConfig config = new HighTimeWarpConfig(ResourceManager.FNRESOURCE_WASTEHEAT, wasteHeatMultiplier, unitsPerMassUnit, preventOverheat);
+            ResourceBuffers.TimeBasedConfig config =
+                new HighTimeWarpConfig(SyncVesselResourceManager.WASTEHEAT_RESOURCE_NAME, wasteHeatMultiplier, unitsPerMassUnit, preventOverheat);
             config.ConfigureVariable(this.part.mass);
             config.Init(this.part);
             this.AddConfiguration(config);

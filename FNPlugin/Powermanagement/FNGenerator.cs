@@ -556,14 +556,18 @@ namespace FNPlugin
             if (chargedParticleMode)
             {
                 SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(this.vessel);
-                manager.RegisterPtpSnapshot(attachedPowerSource as ISyncResourceModule, this, ResourceManager.FNRESOURCE_CHARGED_PARTICLES);
+                if (attachedPowerSource as ISyncResourceModule != null)
+                    manager.RegisterPtpSnapshot(attachedPowerSource as ISyncResourceModule, this, SyncVesselResourceManager.CHARGED_PARTICLES_RESOURCE_NAME);
                 attachedPowerSource.ConnectedChargedParticleElectricGenerator = this;
             }
             else
             {
                 SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(this.vessel);
-                manager.RegisterPtpSnapshot(attachedPowerSource as ISyncResourceModule, this, ResourceManager.FNRESOURCE_CHARGED_PARTICLES);
-                manager.RegisterPtpSnapshot(attachedPowerSource as ISyncResourceModule, this, ResourceManager.FNRESOURCE_THERMALPOWER);
+                if (attachedPowerSource as ISyncResourceModule != null)
+                {
+                    manager.RegisterPtpSnapshot(attachedPowerSource as ISyncResourceModule, this, SyncVesselResourceManager.CHARGED_PARTICLES_RESOURCE_NAME);
+                    manager.RegisterPtpSnapshot(attachedPowerSource as ISyncResourceModule, this, ResourceManager.FNRESOURCE_THERMALPOWER);
+                }
                 attachedPowerSource.ConnectedThermalElectricGenerator = this;
             }
 
@@ -831,26 +835,39 @@ namespace FNPlugin
                         return;
                     }
 
-                    if (attachedPowerSource.ChargedPowerRatio != 1)
+                    if (attachedPowerSource.ChargedPowerRatio == 0)
                     {
                         attachedPowerSource.NotifyActiveThermalEnergyGenerator(_totalEff, 1);
                         SyncVesselResourceManager.AddProcess(this, this,
                             ConversionProcess.Builder()
                                 .Module(this)
-                                .AddInputPerSecond(ResourceManager.FNRESOURCE_THERMALPOWER, maxThermalPower)
-                                .AddOutputPerSecond(ResourceManager.FNRESOURCE_MEGAJOULES, maxThermalPower * _totalEff)
-                                .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, maxThermalPower * (1 - _totalEff))
+                                .AddInputPerSecond(SyncVesselResourceManager.THERMAL_POWER_RESOURCE_NAME, maxThermalPower)
+                                .AddOutputPerSecond(SyncVesselResourceManager.MEGAJOULES_RESOURCE_NAME, maxThermalPower * _totalEff)
+                                .AddOutputPerSecond(SyncVesselResourceManager.WASTEHEAT_RESOURCE_NAME, maxThermalPower * (1 - _totalEff))
                                 .Build());
                     }
-                    if (attachedPowerSource.ChargedPowerRatio != 0)
+                    else if (attachedPowerSource.ChargedPowerRatio == 1)
                     {
-                        attachedPowerSource.NotifyActiveChargedEnergyGenerator( _totalEff, 1);
+                        attachedPowerSource.NotifyActiveChargedEnergyGenerator(_totalEff, 1);
                         SyncVesselResourceManager.AddProcess(this, this,
                             ConversionProcess.Builder()
                                 .Module(this)
-                                .AddInputPerSecond(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, maxChargedPower)
-                                .AddOutputPerSecond(ResourceManager.FNRESOURCE_MEGAJOULES, maxChargedPower * _totalEff)
-                                .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, maxChargedPower * (1 - _totalEff))
+                                .AddInputPerSecond(SyncVesselResourceManager.CHARGED_PARTICLES_RESOURCE_NAME, maxChargedPower)
+                                .AddOutputPerSecond(SyncVesselResourceManager.MEGAJOULES_RESOURCE_NAME, maxChargedPower * _totalEff)
+                                .AddOutputPerSecond(SyncVesselResourceManager.WASTEHEAT_RESOURCE_NAME, maxChargedPower * (1 - _totalEff))
+                                .Build());
+                    }
+                    else
+                    {
+                        attachedPowerSource.NotifyActiveThermalEnergyGenerator(_totalEff, 1);
+                        attachedPowerSource.NotifyActiveChargedEnergyGenerator(_totalEff, 1);
+                        SyncVesselResourceManager.AddProcess(this, this,
+                            ConversionProcess.Builder()
+                                .Module(this)
+                                .AddInputPerSecond(SyncVesselResourceManager.THERMAL_POWER_RESOURCE_NAME, maxThermalPower)
+                                .AddInputPerSecond(SyncVesselResourceManager.CHARGED_PARTICLES_RESOURCE_NAME, maxChargedPower)
+                                .AddOutputPerSecond(SyncVesselResourceManager.MEGAJOULES_RESOURCE_NAME, (maxThermalPower + maxChargedPower) * _totalEff)
+                                .AddOutputPerSecond(SyncVesselResourceManager.WASTEHEAT_RESOURCE_NAME, (maxThermalPower + maxChargedPower) * (1 - _totalEff))
                                 .Build());
                     }
                 }
@@ -864,9 +881,9 @@ namespace FNPlugin
                     SyncVesselResourceManager.AddProcess(this, this,
                         ConversionProcess.Builder()
                             .Module(this)
-                            .AddInputPerSecond(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, maxChargedPower)
-                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_MEGAJOULES, maxChargedPower * _totalEff)
-                            .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, maxChargedPower * (1 - _totalEff))
+                            .AddInputPerSecond(SyncVesselResourceManager.CHARGED_PARTICLES_RESOURCE_NAME, maxChargedPower)
+                            .AddOutputPerSecond(SyncVesselResourceManager.MEGAJOULES_RESOURCE_NAME, maxChargedPower * _totalEff)
+                            .AddOutputPerSecond(SyncVesselResourceManager.WASTEHEAT_RESOURCE_NAME, maxChargedPower * (1 - _totalEff))
                             .Build());
                 }
             }

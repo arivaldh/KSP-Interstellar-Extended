@@ -20,8 +20,20 @@ namespace FNPlugin
             }
         }
 
-        private static Dictionary<Vessel, SyncVesselResourceManager> vesselManagers = new Dictionary<Vessel, SyncVesselResourceManager>();
+        public const string ELECTRIC_CHARGE_RESOURCE_NAME   = "ElectricCharge";
+        public const string MEGAJOULES_RESOURCE_NAME        = "Megajoules";
+        public const string CHARGED_PARTICLES_RESOURCE_NAME = "ChargedParticles";
+        public const string THERMAL_POWER_RESOURCE_NAME     = "ThermalPower";
+        public const string WASTEHEAT_RESOURCE_NAME         = "WasteHeat";
 
+        public readonly static PartResourceDefinition ELECTRIC_CHARGE_DEFINITION   = PartResourceLibrary.Instance.GetDefinition(ELECTRIC_CHARGE_RESOURCE_NAME);
+        public readonly static PartResourceDefinition WASTEHEAT_DEFINITION         = PartResourceLibrary.Instance.GetDefinition(WASTEHEAT_RESOURCE_NAME);
+        public readonly static PartResourceDefinition THERMAL_POWER_DEFINITION     = PartResourceLibrary.Instance.GetDefinition(THERMAL_POWER_RESOURCE_NAME);
+        public readonly static PartResourceDefinition CHARGED_PARTICLES_DEFINITION = PartResourceLibrary.Instance.GetDefinition(CHARGED_PARTICLES_RESOURCE_NAME);
+        public readonly static PartResourceDefinition MEGAJOULES_DEFINITION        = PartResourceLibrary.Instance.GetDefinition(MEGAJOULES_RESOURCE_NAME);
+
+        private static Dictionary<Vessel, SyncVesselResourceManager> vesselManagers = new Dictionary<Vessel, SyncVesselResourceManager>();
+        
         public static SyncVesselResourceManager GetSyncVesselResourceManager(Vessel vessel)
         {
             SyncVesselResourceManager manager = null;
@@ -41,8 +53,8 @@ namespace FNPlugin
         private Dictionary<int, ResourceSnapshot> snapshots;
 
         // FixedUpdate Synchronization results
-        Dictionary<int, Dictionary<string, ProductionConsumption>> productions = new Dictionary<int, Dictionary<string, ProductionConsumption>>();
-        Dictionary<int, Dictionary<string, ProductionConsumption>> consumptions = new Dictionary<int, Dictionary<string, ProductionConsumption>>();
+        Dictionary<int, Dictionary<ISyncResourceModule, ProductionConsumption>> productions = new Dictionary<int, Dictionary<ISyncResourceModule, ProductionConsumption>>();
+        Dictionary<int, Dictionary<ISyncResourceModule, ProductionConsumption>> consumptions = new Dictionary<int, Dictionary<ISyncResourceModule, ProductionConsumption>>();
 
         // GUI elements
         private const int labelWidth = 240;
@@ -87,7 +99,7 @@ namespace FNPlugin
         public static void RegisterRadiator(FNRadiator radiator)
         {
             SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(radiator.vessel);
-            ResourceSnapshot snapshot = manager.GetResourceSnapshot(ResourceManager.FNRESOURCE_WASTEHEAT);
+            ResourceSnapshot snapshot = manager.GetResourceSnapshot(WASTEHEAT_DEFINITION.id);
             (snapshot as WasteHeatSnapshot).RegisterRadiator(radiator);
         }
 
@@ -157,7 +169,9 @@ namespace FNPlugin
                 resourceSnapshots.Add(producer, ptpSnapshot);
             }
 
-            ptpSnapshot.AddConsumer(consumer);
+            // To allow TP/CP snapshot registration for Producer
+            if (consumer != null)
+                ptpSnapshot.AddConsumer(consumer);
         }
 
         private void createGUIElements(int resourceId)
@@ -232,6 +246,42 @@ namespace FNPlugin
                     consumptions.Add(resourceId, GetConsumptionPerSecond(resourceId));
                 }
             }
+
+            Dictionary<ISyncResourceModule, ProductionConsumption> wasteHeatConsumptions;
+            if (!consumptions.TryGetValue(WASTEHEAT_DEFINITION.id, out wasteHeatConsumptions))
+            {
+                wasteHeatConsumptions = new Dictionary<ISyncResourceModule, ProductionConsumption>();
+                consumptions.Add(WASTEHEAT_DEFINITION.id, wasteHeatConsumptions);
+            }
+
+            foreach (KeyValuePair<ISyncResourceModule, double> entry in GetWasteHeatConsumptionPerSecond())
+            {
+                wasteHeatConsumptions.Add(entry.Key, new ProductionConsumption(entry.Value, Double.NaN));
+            }
+        }
+
+        private Dictionary<string, ProductionConsumption> GetSummary(int resourceId, Dictionary<ISyncResourceModule, ProductionConsumption> input)
+        {
+            Dictionary<string, ProductionConsumption> summary = new Dictionary<string, ProductionConsumption>();
+            var groupedPowerDraws = input.GroupBy(entry => entry.Key.GetResourceManagerDisplayName());
+
+            foreach (var group in groupedPowerDraws)
+            {
+                double sumOfMax = group.Sum(value => value.Value.Max);
+                double sumOfCurrent = group.Sum(value => value.Value.Current);
+                double sumRatio = 100.0d * sumOfCurrent / sumOfMax;
+
+                string name = group.Key;
+                var count = group.Count();
+                Debug.LogError(String.Format("Grouping {0}, count {1}", name, count));
+                if (count > 1)
+                    name = String.Format("{0} {1}", count, name);
+                if (resourceId == MEGAJOULES_DEFINITION.id && sumRatio < 99.5)
+                    name = String.Format("{0} {1}%", name, sumRatio.ToString("0"));
+
+                summary.Add(name, new ProductionConsumption(sumOfCurrent, sumOfMax));
+            }
+            return summary;
         }
 
         private void CommitSnapshots()
@@ -258,60 +308,64 @@ namespace FNPlugin
             }
         }
 
-        private Dictionary<string, ProductionConsumption> GetProductionPerSecond(int resourceId)
+        private Dictionary<ISyncResourceModule, ProductionConsumption> GetProductionPerSecond(int resourceId)
         {
-            Dictionary<string, ProductionConsumption> result = new Dictionary<string, ProductionConsumption>();
+            Dictionary<ISyncResourceModule, ProductionConsumption> result = new Dictionary<ISyncResourceModule, ProductionConsumption>();
             foreach (List<ConversionProcess> processesList in processes.Values)
             {
                 foreach (ConversionProcess process in processesList)
                 {
-                    string name = process.Module.GetResourceManagerDisplayName();
                     double current;
                     double max;
                     process.GetProductionPerSecond(resourceId, out current, out max);
 
                     if (max < Double.Epsilon) continue;
 
-                    if (result.ContainsKey(name))
+                    ProductionConsumption entry;
+                    if (!result.TryGetValue(process.Module, out entry))
                     {
-                        result[name].Current += current;
-                        result[name].Max += max;
+                        entry = new ProductionConsumption(current, max);
+                        result.Add(process.Module, entry);
                     }
                     else
                     {
-                        result.Add(name, new ProductionConsumption(current, max));
+                        Debug.Log("Duplicate Entry in Productions for " + process.Module.GetResourceManagerDisplayName() + " SHOULD NOT HAPPEN");
+                        entry.Current += current;
+                        entry.Max += max;
                     }
+                    
                 }
             }
             return result;
         }
 
-        private Dictionary<string, ProductionConsumption> GetConsumptionPerSecond(int resourceId)
+        private Dictionary<ISyncResourceModule, ProductionConsumption> GetConsumptionPerSecond(int resourceId)
         {
-            Dictionary<string, ProductionConsumption> result = new Dictionary<string, ProductionConsumption>();
+            Dictionary<ISyncResourceModule, ProductionConsumption> result = new Dictionary<ISyncResourceModule, ProductionConsumption>();
             foreach (List<ConversionProcess> processesList in processes.Values)
             {
                 foreach (ConversionProcess process in processesList)
                 {
-                    string name = process.Module.GetResourceManagerDisplayName();
                     double current;
                     double max;
                     process.GetConsumptionPerSecond(resourceId, out current, out max);
 
                     if (max < Double.Epsilon) continue;
 
-                    if (result.ContainsKey(name))
-                    {
-                        result[name].Current += current;
-                        result[name].Max += max;
-                    }
-                    else
-                    {
-                        result.Add(name, new ProductionConsumption(current, max));
-                    }
+                    result.Add(process.Module, new ProductionConsumption(current, max));
                 }
             }
             return result;
+        }
+
+        private Dictionary<ISyncResourceModule, double> GetWasteHeatConsumptionPerSecond()
+        {
+            WasteHeatSnapshot wasteHeatSnapshot = GetResourceSnapshot(WASTEHEAT_DEFINITION.id) as WasteHeatSnapshot;
+            if (wasteHeatSnapshot != null)
+            {
+                return wasteHeatSnapshot.GetRadiatorsOutput();
+            }
+            return new Dictionary<ISyncResourceModule, double>();
         }
 
         public void ShowWindow()
@@ -332,12 +386,10 @@ namespace FNPlugin
 
         public Boolean ProduceGUI(int resourceId)
         {
-            string resourceName = PartResourceLibrary.Instance.GetDefinition(resourceId).name;
-
-            if (resourceName == ResourceManager.FNRESOURCE_MEGAJOULES ||
-                resourceName == ResourceManager.FNRESOURCE_THERMALPOWER ||
-                resourceName == ResourceManager.FNRESOURCE_CHARGED_PARTICLES || 
-                resourceName == ResourceManager.FNRESOURCE_WASTEHEAT)
+            if (resourceId == MEGAJOULES_DEFINITION.id ||
+                resourceId == THERMAL_POWER_DEFINITION.id ||
+                resourceId == CHARGED_PARTICLES_DEFINITION.id ||
+                resourceId == WASTEHEAT_DEFINITION.id)
             {
                 return true;
             }
@@ -349,24 +401,22 @@ namespace FNPlugin
             int xPos = 0;
             int yPos = 0;
 
-            string resourceName = PartResourceLibrary.Instance.GetDefinition(resourceId).name;
-
-            if (resourceName == ResourceManager.FNRESOURCE_MEGAJOULES)
+            if (resourceId == MEGAJOULES_DEFINITION.id)
             {
                 xPos = 50;
                 yPos = 50;
             }
-            else if (resourceName == ResourceManager.FNRESOURCE_THERMALPOWER)
+            else if (resourceId == THERMAL_POWER_DEFINITION.id)
             {
                 xPos = 600;
                 yPos = 50;
             }
-            else if (resourceName == ResourceManager.FNRESOURCE_CHARGED_PARTICLES)
+            else if (resourceId == CHARGED_PARTICLES_DEFINITION.id)
             {
                 xPos = 50;
                 yPos = 600;
             }
-            else if (resourceName == ResourceManager.FNRESOURCE_WASTEHEAT)
+            else if (resourceId == WASTEHEAT_DEFINITION.id)
             {
                 xPos = 600;
                 yPos = 600;
@@ -482,12 +532,12 @@ namespace FNPlugin
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Theoretical Supply", leftBoldLabel, GUILayout.ExpandWidth(true));
-            GUILayout.Label(GetUnitFormatString(resourceName, maxProduction), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
+            GUILayout.Label(GetUnitFormatString(resourceId, maxProduction), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Current Supply", leftBoldLabel, GUILayout.ExpandWidth(true));
-            GUILayout.Label(GetUnitFormatString(resourceName, production), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
+            GUILayout.Label(GetUnitFormatString(resourceId, production), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -497,7 +547,7 @@ namespace FNPlugin
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Power Demand", leftBoldLabel, GUILayout.ExpandWidth(true));
-            GUILayout.Label(GetUnitFormatString(resourceName, consumption), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
+            GUILayout.Label(GetUnitFormatString(resourceId, consumption), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(overviewWidth));
             GUILayout.EndHorizontal();
 
             GUILayout.Space(5);
@@ -509,12 +559,14 @@ namespace FNPlugin
 
             if (productions.ContainsKey(resourceId))
             {
-                foreach (var entry in productions[resourceId].OrderByDescending(entry => entry.Value.Current))
+                Dictionary<string, ProductionConsumption> summary = GetSummary(resourceId, productions[resourceId]);
+
+                foreach (var entry in summary.OrderByDescending(entry => entry.Value.Current))
                 {
                     GUILayout.BeginHorizontal();
                     GUILayout.Label(entry.Key, leftAlignedLabel, GUILayout.ExpandWidth(true));
-                    GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Current), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
-                    GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Max), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
+                    GUILayout.Label(GetUnitFormatString(resourceId, entry.Value.Current), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
+                    GUILayout.Label(GetUnitFormatString(resourceId, entry.Value.Max), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
                     GUILayout.EndHorizontal();
                 }
             }
@@ -523,18 +575,20 @@ namespace FNPlugin
             GUILayout.BeginHorizontal();
             GUILayout.Label("Consumer Component", leftBoldLabel, GUILayout.ExpandWidth(true));
             GUILayout.Label("Demand", rightBoldLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
-            GUILayout.Label("max", rightBoldLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(priorityWidth));
+            GUILayout.Label("Max", rightBoldLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(priorityWidth));
             //GUILayout.Label("Rank", right_bold_label, GUILayout.ExpandWidth(false), GUILayout.MinWidth(priorityWidth));
             GUILayout.EndHorizontal();
 
             if (consumptions.ContainsKey(resourceId))
             {
-                foreach (var entry in consumptions[resourceId].OrderByDescending(entry => entry.Value.Current))
+                Dictionary<string, ProductionConsumption> summary = GetSummary(resourceId, consumptions[resourceId]);
+
+                foreach (var entry in summary.OrderByDescending(entry => entry.Value.Current))
                 {
                     GUILayout.BeginHorizontal();
                     GUILayout.Label(entry.Key, leftAlignedLabel, GUILayout.ExpandWidth(true));
-                    GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Current), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
-                    GUILayout.Label(GetUnitFormatString(resourceName, entry.Value.Max), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
+                    GUILayout.Label(GetUnitFormatString(resourceId, entry.Value.Current), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
+                    GUILayout.Label(GetUnitFormatString(resourceId, entry.Value.Max), rightAlignedLabel, GUILayout.ExpandWidth(false), GUILayout.MinWidth(valueWidth));
                     GUILayout.EndHorizontal();
                 }
             }
@@ -552,24 +606,24 @@ namespace FNPlugin
             GUI.DragWindow();
         }
 
-        protected string GetUnit(string resourceName)
+        protected string GetUnit(int resourceId)
         {
-            if (resourceName == ResourceManager.FNRESOURCE_MEGAJOULES ||
-                resourceName == ResourceManager.FNRESOURCE_THERMALPOWER ||
-                resourceName == ResourceManager.FNRESOURCE_CHARGED_PARTICLES ||
-                resourceName == ResourceManager.FNRESOURCE_WASTEHEAT)
+            if (resourceId == MEGAJOULES_DEFINITION.id ||
+                resourceId == THERMAL_POWER_DEFINITION.id ||
+                resourceId == CHARGED_PARTICLES_DEFINITION.id ||
+                resourceId == WASTEHEAT_DEFINITION.id)
             {
                 return "W";
             }
             return "U";
         }
 
-        protected int GetUnitMultiplier(string resourceName)
+        protected int GetUnitMultiplier(int resourceId)
         {
-            if (resourceName == ResourceManager.FNRESOURCE_MEGAJOULES ||
-                resourceName == ResourceManager.FNRESOURCE_THERMALPOWER ||
-                resourceName == ResourceManager.FNRESOURCE_CHARGED_PARTICLES ||
-                resourceName == ResourceManager.FNRESOURCE_WASTEHEAT)
+            if (resourceId == MEGAJOULES_DEFINITION.id ||
+                resourceId == THERMAL_POWER_DEFINITION.id ||
+                resourceId == CHARGED_PARTICLES_DEFINITION.id ||
+                resourceId == WASTEHEAT_DEFINITION.id)
             {
                 return 1_000_000;
             }
@@ -599,10 +653,10 @@ namespace FNPlugin
             }
         }
 
-        protected string GetUnitFormatString(string resourceName, double amount)
+        protected string GetUnitFormatString(int resourceId, double amount)
         {
-            string unit = GetUnit(resourceName);
-            int multiplier = GetUnitMultiplier(resourceName);
+            string unit = Double.IsNaN(amount) || Double.IsInfinity(amount) ? "" : GetUnit(resourceId);
+            int multiplier = GetUnitMultiplier(resourceId);
 
             amount *= multiplier;
 

@@ -1429,16 +1429,16 @@ namespace FNPlugin.Reactors
                 max_thermal_to_supply_per_second = MaximumThermalPower * geeForceModifier * safetyThrotleModifier;
 
                 SyncVesselResourceManager manager = SyncVesselResourceManager.GetSyncVesselResourceManager(this.vessel);
-                PtpSnapshot chargedSnapshot = manager.GetResourceSnapshot(this, ResourceManager.FNRESOURCE_CHARGED_PARTICLES) as PtpSnapshot;
-                PtpSnapshot thermalSnapshot = manager.GetResourceSnapshot(this, ResourceManager.FNRESOURCE_THERMALPOWER) as PtpSnapshot;
+                PtpSnapshot chargedSnapshot = manager.GetResourceSnapshot(this, SyncVesselResourceManager.CHARGED_PARTICLES_RESOURCE_NAME) as PtpSnapshot;
+                PtpSnapshot thermalSnapshot = manager.GetResourceSnapshot(this, SyncVesselResourceManager.THERMAL_POWER_RESOURCE_NAME) as PtpSnapshot;
                 chargedSnapshot.RegisterMaxProduction(max_charged_to_supply_per_second);
                 thermalSnapshot.RegisterMaxProduction(max_thermal_to_supply_per_second);
 
                 productionRequest = SyncVesselResourceManager.AddProcess(this, this,
                     ConversionProcess.Builder()
                         .Module(this)
-                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_THERMALPOWER, max_thermal_to_supply_per_second, false, true)
-                        .AddOutputPerSecond(ResourceManager.FNRESOURCE_CHARGED_PARTICLES, max_charged_to_supply_per_second, false, true)
+                        .AddOutputPerSecond(SyncVesselResourceManager.THERMAL_POWER_RESOURCE_NAME, max_thermal_to_supply_per_second, false, true)
+                        .AddOutputPerSecond(SyncVesselResourceManager.CHARGED_PARTICLES_RESOURCE_NAME, max_charged_to_supply_per_second, false, true)
                         .Build());
 
                 if (Planetarium.GetUniversalTime() != 0)
@@ -1465,7 +1465,7 @@ namespace FNPlugin.Reactors
                 powerPcnt = 0;
             }
 
-            resourceBuffers.UpdateVariable(ResourceManager.FNRESOURCE_WASTEHEAT, this.part.mass);
+            resourceBuffers.UpdateVariable(SyncVesselResourceManager.WASTEHEAT_RESOURCE_NAME, this.part.mass);
             resourceBuffers.UpdateBuffers();
 
             if (IsEnabled) return;
@@ -1473,8 +1473,8 @@ namespace FNPlugin.Reactors
 
         public override void Notify(List<ConversionProcess> processes)
         {
-            ongoing_charged_power_generated = productionRequest.GetProduction(ResourceManager.FNRESOURCE_CHARGED_PARTICLES);
-            ongoing_thermal_power_generated = productionRequest.GetProduction(ResourceManager.FNRESOURCE_THERMALPOWER);
+            ongoing_charged_power_generated = productionRequest.GetProduction(SyncVesselResourceManager.CHARGED_PARTICLES_DEFINITION.id);
+            ongoing_thermal_power_generated = productionRequest.GetProduction(SyncVesselResourceManager.THERMAL_POWER_DEFINITION.id);
 
             ongoing_total_power_generated = ongoing_thermal_power_generated + ongoing_charged_power_generated;
 

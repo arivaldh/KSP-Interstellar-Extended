@@ -108,6 +108,7 @@ namespace FNPlugin
         }
 
         private readonly List<FNRadiator> radiators;
+        private readonly Dictionary<ISyncResourceModule, double> consumptions;
         private double alreadyGeneratedHeat;
         // Consumed = Radiated + Convected
         private double alreadyConsumedHeat;
@@ -121,6 +122,7 @@ namespace FNPlugin
         public WasteHeatSnapshot(Vessel vessel, int resourceId, string resourceName) : base(vessel, resourceId, resourceName)
         {
             radiators = new List<FNRadiator>();
+            consumptions = new Dictionary<ISyncResourceModule, double>();
         }
 
         public override double GetStorageRatio()
@@ -134,9 +136,9 @@ namespace FNPlugin
             radiators.Add(radiator);
         }
 
-        public void DeRegisterRadiator(FNRadiator radiator)
+        public Dictionary<ISyncResourceModule, double> GetRadiatorsOutput()
         {
-            radiators.Remove(radiator);
+            return consumptions;
         }
 
         public override void Commit()
@@ -150,7 +152,17 @@ namespace FNPlugin
                 for (int tick = 0; tick < timeTicks; tick++)
                 {
                     double tickConsumed = 0.0d;
-                    radiators.ForEach(radiator => tickConsumed += warpTick * radiator.GetConsumedWasteHeatPerSecond());
+                    foreach (FNRadiator radiator in radiators)
+                    {
+                        double wasteHeatRadiated = warpTick * radiator.GetConsumedWasteHeatPerSecond();
+                        double oldConsumption = 0;
+                        if (consumptions.TryGetValue(radiator, out oldConsumption))
+                        {
+                            consumptions.Remove(radiator);
+                        }
+                        consumptions.Add(radiator, wasteHeatRadiated / TimeWarp.fixedDeltaTime);
+                        tickConsumed += wasteHeatRadiated;
+                    }
 
                     alreadyGeneratedHeat += tickGenerated;
                     alreadyConsumedHeat += tickConsumed;
