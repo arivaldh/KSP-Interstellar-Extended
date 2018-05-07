@@ -356,8 +356,8 @@ namespace FNPlugin
                 Fields["heatProductionStr"].guiActive = true;
                 Fields["efficiencyStr"].guiActive = true;
                 electricalPowerShareStr = (100.0 * _electrical_share_f).ToString("0.00") + "%";
-                electricalPowerConsumptionStr = _electrical_consumption.ToString("0.000") + " MW";
-                heatProductionStr = _heat_production_f.ToString("0.000") + " MW";
+                electricalPowerConsumptionStr = (_electrical_consumption / TimeWarp.fixedDeltaTime).ToString("0.000") + " MW";
+                heatProductionStr = (_heat_production_f / TimeWarp.fixedDeltaTime).ToString("0.000") + " MW";
 
                 if (Current_propellant == null)
                     efficiencyStr = "";
@@ -443,8 +443,8 @@ namespace FNPlugin
             request = SyncVesselResourceManager.AddProcess(this, this,
                 ConversionProcess.Builder()
                     .Module(this)
-                    .AddInputPerSecond(ResourceManager.FNRESOURCE_MEGAJOULES, maxThrottlePower)
-                    .AddOutputPerSecond(ResourceManager.FNRESOURCE_WASTEHEAT, maxThrottlePower * wasteHeatRatio)
+                    .AddInputPerSecond(SyncVesselResourceManager.MEGAJOULES_RESOURCE_NAME, maxThrottlePower)
+                    .AddOutputPerSecond(SyncVesselResourceManager.WASTEHEAT_RESOURCE_NAME, maxThrottlePower * wasteHeatRatio)
                     .Build());
         }
 
@@ -452,10 +452,10 @@ namespace FNPlugin
         {
             _electrical_consumption = CheatOptions.InfiniteElectricity
                 ? maxThrottlePower
-                : request.GetConsumption(ResourceManager.FNRESOURCE_MEGAJOULES);
+                : request.GetConsumption(SyncVesselResourceManager.MEGAJOULES_RESOURCE_NAME);
 
             // update GUI Values
-            _heat_production_f = request != null ? request.GetProduction(ResourceManager.FNRESOURCE_WASTEHEAT) : 0;
+            _heat_production_f = request.GetProduction(SyncVesselResourceManager.WASTEHEAT_RESOURCE_NAME);
 
             var effectiveIsp = _modifiedCurrentPropellantIspMultiplier * _modifiedEngineBaseIsp * ThrottleModifiedIsp();
 
